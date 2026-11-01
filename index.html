@@ -61,6 +61,7 @@ header.top{background:var(--card);border-bottom:1px solid var(--line);position:s
 .tab .n{font-family:"IBM Plex Mono",monospace;font-weight:500;opacity:.8}
 .genel{background:var(--warn-soft);color:var(--warn-ink);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin:4px 0 10px}
 .genel b{font-weight:600}
+.hint.desc{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--acc);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--ink2);line-height:1.45}
 .hint{font-size:12px;color:var(--mute);margin:2px 0 8px}
 .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px;padding-bottom:24px}
 .row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;color:var(--ink);min-height:64px}
@@ -159,21 +160,25 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 <script>
 (() => {
   const TABS = [
-    ['sinyal', 'Alım sinyalleri', 'ALINABİLİR, TOPLANIYOR ve YAKIN hisseler · Toplam skora göre'],
-    ['yeni', 'Bugün yeni', 'Alım tarafında sinyali bugün başlayan hisseler'],
-    ['ucuz', 'En ucuz', 'Percentile ≤ 20 · aralarında Toplam skoru en yüksekler üstte'],
-    ['dagitim', 'Dağıtım', 'Ucuz bölgede ama bugün düşen hisseler (DAĞITIM)'],
-    ['pahali', 'En pahalı', 'Percentile ≥ 80 · son 200 barın en üstündekiler'],
-    ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler"],
-    ['tum', 'Tümü', 'Bütün hisseler, alfabetik']
+    ['ALINABILIR', 'Alınabilir', 'Altı şartın hepsi tamam. Sistemin “alınabilir” dediği tek durum. Kesin yükselir demek değil; şartlar oluştu demek.'],
+    ['TOPLANIYOR', 'Toplanıyor', 'Ucuz, en fazla 2 şart eksik, fiyat düşmüyor ve endekse göre güçleniyor. Biri sessizce topluyor olabilir; Alınabilir’e en yakın aday.'],
+    ['YAKIN', 'Yakın', 'Ucuz ve en fazla 2 şart eksik, ama endekse göre güçlenme yok. Şartlara yaklaşıyor; takipte tut.'],
+    ['DAGITIM', 'Dağıtım', 'Ucuz ama bugün düşüyor; mal satılıyor olabilir. Henüz alma, düşüş sürebilir.'],
+    ['yeni', 'Bugün yeni', 'Alınabilir, Toplanıyor veya Yakın sinyali bugün başlayan hisseler.'],
+    ['ucuz', 'En ucuz', 'Percentile ≤ 20: son 200 barın en alt bölgesi. Aralarında Toplam skoru yüksek olanlar üstte.'],
+    ['pahali', 'En pahalı', 'Percentile ≥ 80: son 200 barın en üst bölgesi.'],
+    ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler. Sistem bunlarda BEKLE der."],
+    ['tum', 'Tümü', 'Bütün hisseler, alfabetik. BEKLE: ya ucuz değil ya da çok şart eksik.']
   ];
+  const SIGDESC = Object.fromEntries(TABS.slice(0, 4).map(t => [t[0], t[2]]));
+  SIGDESC.BEKLE = 'Ya ucuz değil ya da 3+ şart eksik; ya da fiyat önceki Stop’un %3,5’ten fazla altında (stop kırıldı). Bekle.';
   const COND = {Percentile:'Ucuz: Percentile ≤ 35', Recovery:'Toparlanma: Recovery ≥ 6', Kalite:'Kalite: Toplam ≥ 36',
                 MTF:'Haftalık onay: MTF ≤ 50', Hacim:'Hacim ≥ 1,20× ortalama', Macro:'Makro: GENİŞLEME veya RISK-ON'};
-  const st = { tf: load('tf', 'D'), tab: load('tab', 'sinyal'), q: '', data: null };
+  const st = { tf: load('tf', 'D'), tab: load('tab2', 'ALINABILIR'), q: '', data: null };
   const $ = (s) => document.querySelector(s);
   const nf = (x, d = 2) => x == null || isNaN(x) ? '–' : Number(x).toLocaleString('tr-TR', {minimumFractionDigits: d, maximumFractionDigits: d});
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const trLbl = (s) => String(s || '').replace('GENISLEME', 'GENİŞLEME').replace('NOTR', 'NÖTR').replace('DAGITIM', 'DAĞITIM');
+  const trLbl = (s) => String(s || '').replace('GENISLEME', 'GENİŞLEME').replace('NOTR', 'NÖTR').replace('DAGITIM', 'DAĞITIM').replace('ALINABILIR', 'ALINABİLİR');
   function load(k, d) { try { return localStorage.getItem('ik_' + k) || d; } catch (e) { return d; } }
   function save(k, v) { try { localStorage.setItem('ik_' + k, v); } catch (e) {} }
 
@@ -210,9 +215,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const sig = (t) => M[t] && M[t][st.tf] && M[t][st.tf].sinyal;
     let ts;
     if (tab === 'tum') ts = stocks().map(s => s.t).sort();
-    else if (tab === 'sinyal') ts = (LL.sinyal || []).filter(t => ALIM.includes(sig(t)));
+    else if (SIGDESC[tab]) ts = (LL.sinyal || []).filter(t => sig(t) === tab);
     else if (tab === 'yeni') ts = (LL.yeni || []).filter(t => ALIM.includes(sig(t)));
-    else if (tab === 'dagitim') ts = (LL.sinyal || []).filter(t => sig(t) === 'DAGITIM');
     else if (tab === 'ucuz') ts = (LL.ucuz || []).filter(t => M[t] && M[t][st.tf]).sort((a, b) => (M[b][st.tf].toplam || 0) - (M[a][st.tf].toplam || 0));
     else ts = LL[tab] || [];
     let L = ts.map(t => M[t]).filter(s => s && s[st.tf]);
@@ -241,6 +245,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 
   function renderList() {
     const tab = st.tab;
+    $('#hint').classList.toggle('desc', !st.q);
     $('#hint').textContent = st.q ? `“${st.q}” için sonuçlar` : (TABS.find(t => t[0] === tab) || TABS[0])[2] + (st.tf === 'W' ? ' (haftalık)' : '');
     if (!st.data) {
       $('#list').innerHTML = `<div class="empty">Henüz tarama sonucu yok. İlk tarama bu akşam 18:40'tan sonra burada görünecek.</div>`;
@@ -250,7 +255,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const dipte = S.filter(x => x[st.tf].percentile <= 20).length;
     const oran = S.length ? Math.round(100 * dipte / S.length) : 0;
     $('#genel').classList.toggle('hidden', oran < 50 || !!st.q);
-    $('#genel').innerHTML = `<b>Piyasanın %${oran}'i son 200 ${st.tf === 'W' ? 'haftanın' : 'günün'} dibinde.</b> Bütün borsa birlikte düştüğü için “ucuz” etiketi bugün hisseleri birbirinden ayırmıyor; ucuz listesi bu yüzden Toplam skora göre sıralı. Düşüş günlerinde ucuz bölgedeki hisseler DAĞITIM'a geçer, bu Zippo kuralının sonucu.`;
+    $('#genel').innerHTML = `<b>Piyasanın %${oran}'i son 200 ${st.tf === 'W' ? 'haftanın' : 'günün'} dibinde.</b> Bütün borsa birlikte düştüğü için “ucuz” etiketi bugün hisseleri ayırmıyor.`;
     const L = listFor(tab);
     if (!L.length) { $('#list').innerHTML = `<div class="empty">Bu listede bugün hisse yok.</div>`; return; }
     $('#list').innerHTML = L.slice(0, 400).map(s => {
@@ -297,6 +302,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <div class="spacer"></div>
         <span class="badge b-${esc(r.sinyal)}" style="font-size:12px;padding:5px 11px">${esc(trLbl(r.sinyal))}</span>
       </div>
+      <p class="hint desc" style="margin:0 0 12px">${esc(SIGDESC[r.sinyal] || '')}</p>
       <div class="grid">
         <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
           <section class="card" aria-label="Fiyat ve değer bandı">
@@ -357,7 +363,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 
   document.addEventListener('click', (e) => {
     const tb = e.target.closest('[data-tab]');
-    if (tb) { st.tab = tb.dataset.tab; st.q = ''; $('#q').value = ''; save('tab', st.tab); render(); return; }
+    if (tb) { st.tab = tb.dataset.tab; st.q = ''; $('#q').value = ''; save('tab2', st.tab); render(); return; }
     const tf = e.target.closest('[data-tf]');
     if (tf) { st.tf = tf.dataset.tf; save('tf', st.tf); render(); return; }
     if (e.target.closest('[data-back]')) { if (history.length > 1) history.back(); else location.hash = ''; }
