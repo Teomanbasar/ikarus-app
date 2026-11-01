@@ -59,6 +59,8 @@ header.top{background:var(--card);border-bottom:1px solid var(--line);position:s
 .tab{flex:none;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--ctl-line);background:var(--card);color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
 .tab[aria-selected="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
 .tab .n{font-family:"IBM Plex Mono",monospace;font-weight:500;opacity:.8}
+.genel{background:var(--warn-soft);color:var(--warn-ink);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin:4px 0 10px}
+.genel b{font-weight:600}
 .hint{font-size:12px;color:var(--mute);margin:2px 0 8px}
 .list{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:8px;padding-bottom:24px}
 .row{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;color:var(--ink);min-height:64px}
@@ -144,6 +146,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   <section id="home">
     <div class="search"><input id="q" type="search" placeholder="Hisse ara: THYAO, Akbank…" autocomplete="off" aria-label="Hisse ara"></div>
     <div class="tabs" role="tablist" aria-label="Listeler" id="tabs"></div>
+    <div class="genel hidden" id="genel" role="note"></div>
     <p class="hint" id="hint"></p>
     <div class="list" id="list"></div>
   </section>
@@ -156,9 +159,10 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 <script>
 (() => {
   const TABS = [
-    ['sinyal', 'Sinyaller', 'Bugün BEKLE dışında sinyal veren hisseler'],
-    ['yeni', 'Bugün değişen', 'Sinyali bir önceki bara göre değişen hisseler'],
-    ['ucuz', 'En ucuz', 'Percentile ≤ 20 · son 200 barın en altındakiler'],
+    ['sinyal', 'Alım sinyalleri', 'ALINABİLİR, TOPLANIYOR ve YAKIN hisseler · Toplam skora göre'],
+    ['yeni', 'Bugün yeni', 'Alım tarafında sinyali bugün başlayan hisseler'],
+    ['ucuz', 'En ucuz', 'Percentile ≤ 20 · aralarında Toplam skoru en yüksekler üstte'],
+    ['dagitim', 'Dağıtım', 'Ucuz bölgede ama bugün düşen hisseler (DAĞITIM)'],
     ['pahali', 'En pahalı', 'Percentile ≥ 80 · son 200 barın en üstündekiler'],
     ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler"],
     ['tum', 'Tümü', 'Bütün hisseler, alfabetik']
@@ -198,14 +202,21 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     $('#foot').textContent = `Son tarama: ${d} · Veri: ${p.xu100_tarih.split('-').reverse().join('.')} kapanışı · ${st.data.surum || ''} · Yatırım tavsiyesi değildir.`;
   }
 
-  function listFor(tab) {
+  const ALIM = ['ALINABILIR', 'TOPLANIYOR', 'YAKIN'];
+  function listFor(tab, araYok) {
     if (!st.data) return [];
     const M = byT();
+    const LL = st.data.listeler[st.tf] || {};
+    const sig = (t) => M[t] && M[t][st.tf] && M[t][st.tf].sinyal;
     let ts;
     if (tab === 'tum') ts = stocks().map(s => s.t).sort();
-    else ts = (st.data.listeler[st.tf] || {})[tab] || [];
+    else if (tab === 'sinyal') ts = (LL.sinyal || []).filter(t => ALIM.includes(sig(t)));
+    else if (tab === 'yeni') ts = (LL.yeni || []).filter(t => ALIM.includes(sig(t)));
+    else if (tab === 'dagitim') ts = (LL.sinyal || []).filter(t => sig(t) === 'DAGITIM');
+    else if (tab === 'ucuz') ts = (LL.ucuz || []).filter(t => M[t] && M[t][st.tf]).sort((a, b) => (M[b][st.tf].toplam || 0) - (M[a][st.tf].toplam || 0));
+    else ts = LL[tab] || [];
     let L = ts.map(t => M[t]).filter(s => s && s[st.tf]);
-    const q = st.q.trim().toLocaleUpperCase('tr-TR');
+    const q = araYok ? '' : st.q.trim().toLocaleUpperCase('tr-TR');
     if (q) {
       L = stocks().filter(s => s[st.tf] && (s.t.includes(q) || String(s.ad).toLocaleUpperCase('tr-TR').includes(q)));
       L.sort((a, b) => (a.t.startsWith(q) ? 0 : 1) - (b.t.startsWith(q) ? 0 : 1) || a.t.localeCompare(b.t));
@@ -214,7 +225,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   }
 
   function rightText(r, tab) {
-    if (tab === 'ucuz' || tab === 'pahali') return 'Pct ' + nf(r.percentile, 1);
+    if (tab === 'ucuz') return 'Pct ' + nf(r.percentile, 1) + ' · Toplam ' + nf(r.toplam, 1);
+    if (tab === 'pahali') return 'Pct ' + nf(r.percentile, 1);
     if (tab === 'stop') return "Stop'a " + nf(r.d_stop, 1) + '%';
     return 'Toplam ' + nf(r.toplam, 1);
   }
@@ -222,7 +234,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   function renderTabs() {
     const L = st.data ? st.data.listeler[st.tf] : {};
     $('#tabs').innerHTML = TABS.map(([id, label]) => {
-      const n = id === 'tum' ? stocks().length : (L && L[id] ? L[id].length : 0);
+      const n = st.data ? listFor(id, true).length : 0;
       return `<button type="button" class="tab" role="tab" data-tab="${id}" aria-selected="${st.tab === id && !st.q}">${esc(label)} <span class="n">${n}</span></button>`;
     }).join('');
   }
@@ -234,6 +246,11 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
       $('#list').innerHTML = `<div class="empty">Henüz tarama sonucu yok. İlk tarama bu akşam 18:40'tan sonra burada görünecek.</div>`;
       return;
     }
+    const S = stocks().filter(x => x[st.tf]);
+    const dipte = S.filter(x => x[st.tf].percentile <= 20).length;
+    const oran = S.length ? Math.round(100 * dipte / S.length) : 0;
+    $('#genel').classList.toggle('hidden', oran < 50 || !!st.q);
+    $('#genel').innerHTML = `<b>Piyasanın %${oran}'i son 200 ${st.tf === 'W' ? 'haftanın' : 'günün'} dibinde.</b> Bütün borsa birlikte düştüğü için “ucuz” etiketi bugün hisseleri birbirinden ayırmıyor; ucuz listesi bu yüzden Toplam skora göre sıralı. Düşüş günlerinde ucuz bölgedeki hisseler DAĞITIM'a geçer, bu Zippo kuralının sonucu.`;
     const L = listFor(tab);
     if (!L.length) { $('#list').innerHTML = `<div class="empty">Bu listede bugün hisse yok.</div>`; return; }
     $('#list').innerHTML = L.slice(0, 400).map(s => {
