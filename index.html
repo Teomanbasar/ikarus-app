@@ -121,6 +121,16 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 .links{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .btn{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--ctl-line);background:var(--ctl);color:var(--ink);font-size:14px;font-weight:600}
 .note{font-size:12px;color:var(--mute);margin:10px 0 0}
+.fs{display:grid;grid-template-columns:24px 1fr auto;gap:2px 8px;align-items:start;padding:9px 0;border-top:1px solid var(--line2)}
+.fs:first-of-type{border-top:0}
+.fs span{font-size:14px}
+.fs em{font-style:normal;font-size:13px;color:var(--ink2);white-space:nowrap}
+.fs p{grid-column:2/4;margin:0;font-size:12px;color:var(--mute);line-height:1.4}
+.fs svg{margin-top:1px}
+.quad{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:2px 0 10px;padding-bottom:10px;border-bottom:1px solid var(--line2)}
+.quad div{display:flex;flex-direction:column}
+.quad small{font-size:11px;color:var(--mute)}
+.quad strong{font-size:15px;font-weight:600}
 .hidden{display:none !important}
 </style>
 </head>
@@ -323,6 +333,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
             <h2>Alım şartları · ${okN}/6</h2>
             ${condHtml}
           </section>
+          ${temelCard(s)}
         </div>
         <section class="card" aria-label="IKARUS tablosu">
           <h2>IKARUS tablosu</h2>
@@ -348,6 +359,40 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   const backSvg = () => '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
   const okSvg = () => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Tamam"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
   const noSvg = () => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--warn-ink)" stroke-width="2.6" stroke-linecap="round" role="img" aria-label="Eksik"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  const naSvg = () => '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--mute)" stroke-width="2.6" stroke-linecap="round" role="img" aria-label="Ölçülemedi"><path d="M7 12h10"/></svg>';
+  function para(x) {
+    if (x == null || isNaN(x)) return '–';
+    const a = Math.abs(x);
+    if (a >= 1e9) return nf(x / 1e9, 1) + ' mr ₺';
+    if (a >= 1e6) return nf(x / 1e6, 0) + ' mn ₺';
+    return nf(x, 0) + ' ₺';
+  }
+  function fsVal(m) {
+    const v = m.deger;
+    if (v == null || isNaN(v)) return '–';
+    if (m.bicim === 'yuzde') return (v < 0 ? '−' : /M3/.test(m.ad) ? '+' : '') + '%' + nf(100 * Math.abs(v), 1);
+    if (m.bicim === 'kat') return v < 0 ? 'net nakit' : nf(v, 2) + '×';
+    return para(v);
+  }
+  function temelCard(s) {
+    const k = s.temel;
+    if (!k || !k.maddeler) return `<section class="card" aria-label="Temel analiz"><h2>Temel analiz</h2><p class="note" style="margin:0">Bu hisse için bilanço verisi henüz yok. Temel veri her cumartesi sabahı güncellenir.</p></section>`;
+    const o = k.oranlar || {};
+    const kat = (x) => x == null || isNaN(x) ? '–' : nf(x, 1);
+    const yz = (x) => x == null || isNaN(x) ? '–' : (x < 0 ? '−%' : '%') + nf(100 * Math.abs(x), 0);
+    const banka = k.tip === 'banka';
+    const q = [['F/K', kat(k.fk)], ['PD/DD', kat(k.pddd)], ['ROE', yz(o.roe)],
+      banka ? ['Özk. reel büy.', yz(o.ozkaynak_reel_buyume)] : ['N.borç/FAVÖK', o.net_borc_favok == null ? '–' : o.net_borc_favok < 0 ? 'nakit' : nf(o.net_borc_favok, 1)]];
+    const rows = k.maddeler.map(m => `<div class="fs">${m.gecti === true ? okSvg() : m.gecti === false ? noSvg() : naSvg()}<span>${esc(m.ad)}</span><em class="mono">${esc(fsVal(m))}</em><p>${esc(m.aciklama)}</p></div>`).join('');
+    const [y, a] = String(k.donem).split('/');
+    return `<section class="card" aria-label="Temel analiz">
+      <h2>Temel analiz · ${k.puan}/${k.en_fazla}${k.olculen < k.en_fazla ? ` <span style="font-weight:400;color:var(--mute);font-size:12px">(${k.olculen} ölçülebildi)</span>` : ''}</h2>
+      <div class="quad">${q.map(([l, v]) => `<div><small>${l}</small><strong class="mono">${v}</strong></div>`).join('')}</div>
+      ${rows}
+      <p class="note">${banka ? 'Banka' : 'Şirket'} bilançosu: ${a}/${y} dönemi, gelir ve nakit kalemleri son 4 çeyrek toplamı; karşılaştırma geçen yılın aynı dönemiyle${k.bilanco_karsilastirma && k.bilanco_karsilastirma !== `${y - 1}/${a}` ? ` (bilançoda ${k.bilanco_karsilastirma.split('/').reverse().join('/')} kullanıldı, o dönem kaynakta boş)` : ''}. Enflasyon muhasebesi nedeniyle dönemler arası küçük kaymalar olabilir. Kaynak: İş Yatırım mali tabloları. Bilanço rakamları; faaliyet raporu, ortaklık yapısı ve haberler ayrıca okunmalı.</p>
+    </section>`;
+  }
 
   function route() { const m = location.hash.match(/^#\/(.+)$/); return m ? decodeURIComponent(m[1]).toUpperCase() : null; }
 
