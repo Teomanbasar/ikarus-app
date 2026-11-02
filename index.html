@@ -372,7 +372,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const v = m.deger;
     if (v == null || isNaN(v)) return '–';
     if (m.bicim === 'yuzde') return (v < 0 ? '−' : /M3/.test(m.ad) ? '+' : '') + '%' + nf(100 * Math.abs(v), 1);
-    if (m.bicim === 'kat') return v < 0 ? 'net nakit' : nf(v, 2) + '×';
+    if (m.bicim === 'kat') return v < 0 && /FAVÖK/.test(m.ad) ? 'net nakit' : nf(v, 2) + '×';
     return para(v);
   }
   function temelCard(s) {
@@ -383,7 +383,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const yz = (x) => x == null || isNaN(x) ? '–' : (x < 0 ? '−%' : '%') + nf(100 * Math.abs(x), 0);
     const banka = k.tip === 'banka';
     const q = [['F/K', kat(k.fk)], ['PD/DD', kat(k.pddd)], ['ROE', yz(o.roe)],
-      banka ? ['Özk. reel büy.', yz(o.ozkaynak_reel_buyume)] : ['N.borç/FAVÖK', o.net_borc_favok == null ? '–' : o.net_borc_favok < 0 ? 'nakit' : nf(o.net_borc_favok, 1)]];
+      banka ? ['Özk. reel büy.', yz(o.ozkaynak_reel_buyume)] : ['N.borç/FAVÖK', o.favok_negatif ? 'FAVÖK −' : o.net_nakit ? 'net nakit' : o.net_borc_favok == null ? '–' : nf(o.net_borc_favok, 1)]];
     const rows = k.maddeler.map(m => `<div class="fs">${m.gecti === true ? okSvg() : m.gecti === false ? noSvg() : naSvg()}<span>${esc(m.ad)}</span><em class="mono">${esc(fsVal(m))}</em><p>${esc(m.aciklama)}</p></div>`).join('');
     const [y, a] = String(k.donem).split('/');
     return `<section class="card" aria-label="Temel analiz">
