@@ -57,6 +57,10 @@ header.top{background:var(--card);border-bottom:1px solid var(--line);position:s
 .tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 0;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex:none;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--ctl-line);background:var(--card);color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
+.chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--ctl-line);color:var(--ink2)}
+.chip.ok{color:var(--acc);border-color:var(--acc)}
+.chip.kotu{color:var(--warn-ink);border-color:var(--warn-ink)}
 .tab[aria-selected="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
 .tab .n{font-family:"IBM Plex Mono",monospace;font-weight:500;opacity:.8}
 .genel{background:var(--warn-soft);color:var(--warn-ink);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.45;margin:4px 0 10px}
@@ -175,6 +179,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     ['YAKIN', 'Yakın', 'Ucuz ve en fazla 2 şart eksik, ama endekse göre güçlenme yok. Şartlara yaklaşıyor; takipte tut.'],
     ['DAGITIM', 'Dağıtım', 'Ucuz ama bugün düşüyor; mal satılıyor olabilir. Henüz alma, düşüş sürebilir.'],
     ['yeni', 'Bugün yeni', 'Alınabilir, Toplanıyor veya Yakın sinyali bugün başlayan hisseler.'],
+    ['temel', 'Temel sıra', 'Bilanço puanı (0–100): son bilançodaki ivme %50 (kâr sürprizi, satış büyümesi, kârlılık artışı), kalite %25 (F-skoru, ROE), değerleme %25 (F/K, PD/DD). Bankalar hariç. 2020–2026 testinde en üst %20, bilanço sonrası 3 ayda en alt %20’yi ortalama 7,7 puan geçti.'],
+    ['temel_ucuz', 'Temel + ucuz', 'Temel puanı en üst %20’de ve IKARUS’ta ucuz bölgede (Percentile ≤ 20). Testte en iyi sonuç veren birleşim: bilanço sonrası 3 ayda BIST100’ü ortalama +5,7 puan geçti (yarısından fazlası geçti).'],
     ['ucuz', 'En ucuz', 'Percentile ≤ 20: son 200 barın en alt bölgesi. Aralarında Toplam skoru yüksek olanlar üstte.'],
     ['pahali', 'En pahalı', 'Percentile ≥ 80: son 200 barın en üst bölgesi.'],
     ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler. Sistem bunlarda BEKLE der."],
@@ -238,7 +244,9 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     return L;
   }
 
-  function rightText(r, tab) {
+  function rightText(r, tab, s) {
+    const v = s && s.temel && s.temel.v3;
+    if ((tab === 'temel' || tab === 'temel_ucuz') && v) return 'Temel ' + nf(100 * v.toplam, 0) + (v.etiketler && v.etiketler.includes('Kotu bilanco surprizi') ? ' · ⚠' : '');
     if (tab === 'ucuz') return 'Pct ' + nf(r.percentile, 1) + ' · Toplam ' + nf(r.toplam, 1);
     if (tab === 'pahali') return 'Pct ' + nf(r.percentile, 1);
     if (tab === 'stop') return "Stop'a " + nf(r.d_stop, 1) + '%';
@@ -280,7 +288,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <span class="r">
           ${r.yeni_sinyal ? '<span class="new">YENİ</span>' : ''}
           <span class="badge b-${esc(r.sinyal)}">${esc(trLbl(r.sinyal))}</span>
-          <small class="mono">${esc(rightText(r, tab))}</small>
+          <small class="mono">${esc(rightText(r, tab, s))}</small>
         </span></a>`;
     }).join('');
   }
@@ -386,11 +394,48 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
       banka ? ['Özk. reel büy.', yz(o.ozkaynak_reel_buyume)] : ['N.borç/FAVÖK', o.favok_negatif ? 'FAVÖK −' : o.net_nakit ? 'net nakit' : o.net_borc_favok == null ? '–' : nf(o.net_borc_favok, 1)]];
     const rows = k.maddeler.map(m => `<div class="fs">${m.gecti === true ? okSvg() : m.gecti === false ? noSvg() : naSvg()}<span>${esc(m.ad)}</span><em class="mono">${esc(fsVal(m))}</em><p>${esc(m.aciklama)}</p></div>`).join('');
     const [y, a] = String(k.donem).split('/');
-    return `<section class="card" aria-label="Temel analiz">
+    return v3Card(k) + nadCard(k) + `<section class="card" aria-label="Temel analiz">
       <h2>Temel analiz · ${k.puan}/${k.en_fazla}${k.olculen < k.en_fazla ? ` <span style="font-weight:400;color:var(--mute);font-size:12px">(${k.olculen} ölçülebildi)</span>` : ''}</h2>
       <div class="quad">${q.map(([l, v]) => `<div><small>${l}</small><strong class="mono">${v}</strong></div>`).join('')}</div>
       ${rows}
       <p class="note">${banka ? 'Banka' : 'Şirket'} bilançosu: ${a}/${y} dönemi, gelir ve nakit kalemleri son 4 çeyrek toplamı; karşılaştırma geçen yılın aynı dönemiyle${k.bilanco_karsilastirma && k.bilanco_karsilastirma !== `${y - 1}/${a}` ? ` (bilançoda ${k.bilanco_karsilastirma.split('/').reverse().join('/')} kullanıldı, o dönem kaynakta boş)` : ''}. Enflasyon muhasebesi nedeniyle dönemler arası küçük kaymalar olabilir. Kaynak: İş Yatırım mali tabloları. Bilanço rakamları; faaliyet raporu, ortaklık yapısı ve haberler ayrıca okunmalı.</p>
+    </section>`;
+  }
+
+  const ETK = {'Bilanco ivmesi guclu': ['Bilanço ivmesi güçlü', 'ok'], 'Kotu bilanco surprizi': ['Kötü bilanço sürprizi', 'kotu'],
+               'Zarardan kara dondu': ['Zarardan kâra döndü', 'ok'], 'Kaliteli bilanco': ['Kaliteli bilanço', 'ok'], 'Zayif bilanco': ['Zayıf bilanço', 'kotu']};
+  function v3Card(k) {
+    const v = k.v3;
+    if (!v || v.toplam == null) return '';
+    const bar = (l, x, d) => `<div class="kv"><span>${l} <small style="color:var(--mute)">${d}</small></span><strong class="mono">${x == null ? '–' : nf(100 * x, 0)}<span class="mini" aria-hidden="true"><i style="width:${x == null ? 0 : Math.round(100 * x)}%"></i></span></strong></div>`;
+    const R = v.siralar || {};
+    const yuz = (x) => x == null ? '–' : nf(100 * x, 0);
+    const chips = (v.etiketler || []).map(e => { const [l, c] = ETK[e] || [e, '']; return `<span class="chip ${c}">${esc(l)}</span>`; }).join('');
+    return `<section class="card" aria-label="Temel puan">
+      <h2>Temel puan · ${nf(100 * v.toplam, 0)}/100 <span style="font-weight:400;color:var(--mute);font-size:12px">(${v.dilim === 5 ? 'en üst %20' : v.dilim === 1 ? 'en alt %20' : v.dilim + '. dilim'}, ${v.n} şirket içinde)</span></h2>
+      ${chips ? `<div class="chips">${chips}</div>` : ''}
+      ${v.yorum ? `<p class="hint desc" style="margin:6px 0 10px">${esc(v.yorum)}</p>` : ''}
+      ${bar('Bilanço ivmesi', v.hareket, '%50')}
+      ${bar('Kalite', v.kalite, '%25')}
+      ${bar('Değerleme', v.deger, '%25')}
+      <p class="note">Her sayı, bu şirketin bankalar dışındaki BIST şirketleri arasındaki sırası (100 = en iyi). İvme: net kâr sürprizi ${yuz(R.sue_nk)}, esas faaliyet kârı sürprizi ${yuz(R.sue_faal)}, satışların M3’e göre büyümesi ${yuz(R.satis_reel)}, kârlılık (ROE) artışı ${yuz(R.roe_ivme)}. Kalite: F-skoru ${yuz(R.F)}, ROE ${yuz(R.roe)}. Değerleme: kâr/piyasa değeri ${yuz(R.kaz_get)}, PD/DD ucuzluğu ${yuz(R.pddd)}. Sürpriz = bu çeyreğin kârı, geçen yılın aynı çeyreğinin M3 kadar büyütülmüş halinden ne kadar iyi (şirketin kendi oynaklığına göre). 2020–2026 testinde en güçlü işaretler kâr sürprizi ve satış büyümesiydi; iki sürprizin de en kötü %20’de olması ise ucuz ve kaliteli şirketlerde bile kaybettirdi.</p>
+    </section>`;
+  }
+  function nadCard(k) {
+    const n = k.nad;
+    if (!n) return '';
+    const yz = (x) => x == null ? '–' : (x < 0 ? '−%' : '%') + nf(100 * Math.abs(x), 1);
+    const durum = {'DERIN ISKONTO, KAPANIYOR': 'Derin iskonto, kapanmaya başladı', 'DERIN ISKONTO': 'Derin iskonto (son 3 yılın en derin %20’si)', 'ISKONTO DAR': 'İskonto dar (son 3 yılın en dar %20’si)', 'NORMAL': 'Son 3 yılın normal aralığında'}[n.durum] || n.durum;
+    return `<section class="card" aria-label="Net aktif değer">
+      <h2>Net aktif değer (NAD) iskontosu</h2>
+      <div class="quad">
+        <div><small>İskonto</small><strong class="mono">${yz(n.iskonto)}</strong></div>
+        <div><small>3 yıl ort.</small><strong class="mono">${yz(n.ort_3y)}</strong></div>
+        <div><small>3 yılda yeri</small><strong class="mono">${nf(n.yuzdelik_3y, 0)}/100</strong></div>
+        <div><small>20 günde</small><strong class="mono">${n.degisim_20g == null ? '–' : (n.degisim_20g >= 0 ? '+' : '−') + nf(100 * Math.abs(n.degisim_20g), 1) + ' puan'}</strong></div>
+      </div>
+      <p class="hint desc" style="margin:8px 0">${esc(durum)}</p>
+      <p class="note">NAD = borsadaki iştiraklerin bugünkü değeri × holdingin payı + borsada olmayan iştiraklerin defter değeri + net nakit = ${nf(n.nad_mn / 1000, 0)} mr ₺. Holdingin piyasa değeri ${nf(n.pd_mn / 1000, 0)} mr ₺. İskonto ne kadar derinse holding iştiraklerine göre o kadar ucuz.${n.uzun_vade != null ? ` Uzun vadeli ortalama yaklaşık ${yz(n.uzun_vade)}.` : ''} 3 yılda yeri: 0 = en derin iskonto, 100 = en dar. Paylar: ${esc(n.kaynak)}; geçmiş seri bugünkü paylarla hesaplandığı için yaklaşık.${n.fiyatsiz && n.fiyatsiz.length ? ' Fiyatı alınamayan: ' + esc(n.fiyatsiz.join(', ')) + ' (referans değerde tutuldu).' : ''}</p>
     </section>`;
   }
 
