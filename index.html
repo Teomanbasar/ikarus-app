@@ -185,23 +185,22 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     ['YAKIN', 'Yakın', 'Ucuz ve en fazla 2 şart eksik, ama endekse göre güçlenme yok. Şartlara yaklaşıyor; takipte tut.'],
     ['DAGITIM', 'Dağıtım', 'Ucuz ama bugün düşüyor; mal satılıyor olabilir. Henüz alma, düşüş sürebilir.'],
     ['yeni', 'Bugün yeni', 'Alınabilir, Toplanıyor veya Yakın sinyali bugün başlayan hisseler.'],
-    ['temel', 'Temel sıra', 'Bilanço puanı (0–100): son bilançodaki ivme %50 (kâr sürprizi, satış büyümesi, kârlılık artışı), kalite %25 (F-skoru, ROE), değerleme %25 (F/K, PD/DD). Bankalar hariç. 2020–2026 testinde en üst %20, bilanço sonrası 3 ayda en alt %20’yi ortalama 7,7 puan geçti.'],
-    ['temel_ucuz', 'Temel + ucuz', 'Temel puanı en üst %20’de ve IKARUS’ta ucuz bölgede (Percentile ≤ 20). Testte en iyi sonuç veren birleşim: bilanço sonrası 3 ayda BIST100’ü ortalama +5,7 puan geçti (yarısından fazlası geçti).'],
+    ['temel', 'Temel sıra', 'Bilanço puanı (0–100), üç eşit parça: son bilançodaki ivme (kâr sürprizi, satış büyümesi, kârlılık artışı), kalite (F-skoru, ROE), değerleme (F/K, PD/DD). Bankalar hariç. 2020–2026 testinde en üst %20, bilanço sonrası 3 ayda BIST100’ü ortalama 3,6 puan geçti; en alt %20 geride kaldı. ⚡ işaretliler hızlı yükselmiş, bilanço fiyatlanmış olabilir.'],
     ['ucuz', 'En ucuz', 'Percentile ≤ 20: son 200 barın en alt bölgesi. Aralarında Toplam skoru yüksek olanlar üstte.'],
     ['pahali', 'En pahalı', 'Percentile ≥ 80: son 200 barın en üst bölgesi.'],
     ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler. Sistem bunlarda BEKLE der."],
     ['tum', 'Tümü', 'Bütün hisseler, alfabetik. BEKLE: ya ucuz değil ya da çok şart eksik.']
   ];
-  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20’de) ve teknikte alım tarafında (Alınabilir, Toplanıyor veya Yakın) olan hisseler. Son bilançosu kötü sürpriz olanlar çıkarıldı. Sıra: önce sinyal, sonra temel puan. 2020–2026 testinde güçlü bilanço ile teknikte ucuzluğun birlikte olduğu durum en iyi sonucu verdi.']);
+  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20’de), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20) ve fiyatı henüz kaçmamış (son 20 günde endeksten en fazla %10, son 5 günde en fazla %15 yükselmiş). Sıra: temel puan. 2020–2026 testinde bu grup bilanço sonrası 3 ayda BIST100’ü ortalama 5,7 puan geçti (%55’i geçti), 6 ayda 9,8 puan. Garanti değil; bir hisse yanılabilir.']);
   const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
                   ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
-                  ['temel', 'Temel', ['temel', 'temel_ucuz']]];
+                  ['temel', 'Temel sıra', ['temel']]];
   const grpOf = (tab) => (GROUPS.find(g => g[2].includes(tab)) || GROUPS[0])[0];
   const SIGDESC = Object.fromEntries(TABS.slice(1, 5).map(t => [t[0], t[2]]));
   SIGDESC.BEKLE = 'Ya ucuz değil ya da 3+ şart eksik; ya da fiyat önceki Stop’un %3,5’ten fazla altında (stop kırıldı). Bekle.';
   const COND = {Percentile:'Ucuz: Percentile ≤ 35', Recovery:'Toparlanma: Recovery ≥ 6', Kalite:'Kalite: Toplam ≥ 36',
                 MTF:'Haftalık onay: MTF ≤ 50', Hacim:'Hacim ≥ 1,20× ortalama', Macro:'Makro: GENİŞLEME veya RISK-ON'};
-  const st = { tf: load('tf', 'D'), tab: load('tab3', 'firsat'), q: '', data: null };
+  const st = { tf: load('tf', 'D'), tab: load('tab4', 'firsat'), q: '', data: null };
   const $ = (s) => document.querySelector(s);
   const nf = (x, d = 2) => x == null || isNaN(x) ? '–' : Number(x).toLocaleString('tr-TR', {minimumFractionDigits: d, maximumFractionDigits: d});
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -243,12 +242,6 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     let ts;
     if (tab === 'tum') ts = stocks().map(s => s.t).sort();
     else if (SIGDESC[tab]) ts = (LL.sinyal || []).filter(t => sig(t) === tab);
-    else if (tab === 'firsat') {
-      const SR = {ALINABILIR: 0, TOPLANIYOR: 1, YAKIN: 2};
-      ts = stocks().filter(s => { const v = s.temel && s.temel.v3; const r = s[st.tf];
-          return v && r && v.dilim === 5 && SR[r.sinyal] != null && !(v.etiketler || []).includes('Kotu bilanco surprizi'); })
-        .sort((a, b) => SR[a[st.tf].sinyal] - SR[b[st.tf].sinyal] || b.temel.v3.toplam - a.temel.v3.toplam).map(s => s.t);
-    }
     else if (tab === 'yeni') ts = (LL.yeni || []).filter(t => ALIM.includes(sig(t)));
     else if (tab === 'ucuz') ts = (LL.ucuz || []).filter(t => M[t] && M[t][st.tf]).sort((a, b) => (M[b][st.tf].toplam || 0) - (M[a][st.tf].toplam || 0));
     else ts = LL[tab] || [];
@@ -263,7 +256,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 
   function rightText(r, tab, s) {
     const v = s && s.temel && s.temel.v3;
-    if ((tab === 'temel' || tab === 'temel_ucuz' || tab === 'firsat') && v) return 'Temel ' + nf(100 * v.toplam, 0) + (v.etiketler && v.etiketler.includes('Kotu bilanco surprizi') ? ' · ⚠' : '');
+    if ((tab === 'temel' || tab === 'firsat') && v) return 'Temel ' + nf(100 * v.toplam, 0) + (v.etiketler && v.etiketler.includes('Kotu bilanco surprizi') ? ' · ⚠' : '');
     if (tab === 'ucuz') return 'Pct ' + nf(r.percentile, 1) + ' · Toplam ' + nf(r.toplam, 1);
     if (tab === 'pahali') return 'Pct ' + nf(r.percentile, 1);
     if (tab === 'stop') return "Stop'a " + nf(r.d_stop, 1) + '%';
@@ -310,6 +303,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <span class="r">
           ${r.yeni_sinyal ? '<span class="new">YENİ</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Kotu bilanco surprizi') ? '<span class="warnb" title="Son bilanço kötü sürpriz">⚠ Bilanço</span>' : ''}
+          ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Hizli yukseldi') ? '<span class="warnb" title="Son 5 günde %15+ ya da 20 günde endeksten %30+ yükseldi">⚡ Hızlı</span>' : ''}
           <span class="badge b-${esc(r.sinyal)}">${esc(trLbl(r.sinyal))}</span>
           <small class="mono">${esc(rightText(r, tab, s))}</small>
         </span></a>`;
@@ -426,7 +420,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   }
 
   const ETK = {'Bilanco ivmesi guclu': ['Bilanço ivmesi güçlü', 'ok'], 'Kotu bilanco surprizi': ['Kötü bilanço sürprizi', 'kotu'],
-               'Zarardan kara dondu': ['Zarardan kâra döndü', 'ok'], 'Kaliteli bilanco': ['Kaliteli bilanço', 'ok'], 'Zayif bilanco': ['Zayıf bilanço', 'kotu']};
+               'Zarardan kara dondu': ['Zarardan kâra döndü', 'ok'], 'Kaliteli bilanco': ['Kaliteli bilanço', 'ok'], 'Hizli yukseldi': ['Hızlı yükseldi (fiyatlanmış olabilir)', 'kotu'], 'Zayif bilanco': ['Zayıf bilanço', 'kotu']};
   function v3Card(k) {
     const v = k.v3;
     if (!v || v.toplam == null) return '';
@@ -438,9 +432,9 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
       <h2>Temel puan · ${nf(100 * v.toplam, 0)}/100 <span style="font-weight:400;color:var(--mute);font-size:12px">(${v.dilim === 5 ? 'en üst %20' : v.dilim === 1 ? 'en alt %20' : v.dilim + '. dilim'}, ${v.n} şirket içinde)</span></h2>
       ${chips ? `<div class="chips">${chips}</div>` : ''}
       ${v.yorum ? `<p class="hint desc" style="margin:6px 0 10px">${esc(v.yorum)}</p>` : ''}
-      ${bar('Bilanço ivmesi', v.hareket, '%50')}
-      ${bar('Kalite', v.kalite, '%25')}
-      ${bar('Değerleme', v.deger, '%25')}
+      ${bar('Bilanço ivmesi', v.hareket, '1/3')}
+      ${bar('Kalite', v.kalite, '1/3')}
+      ${bar('Değerleme', v.deger, '1/3')}
       <p class="note">Her sayı, bu şirketin bankalar dışındaki BIST şirketleri arasındaki sırası (100 = en iyi). İvme: net kâr sürprizi ${yuz(R.sue_nk)}, esas faaliyet kârı sürprizi ${yuz(R.sue_faal)}, satışların M3’e göre büyümesi ${yuz(R.satis_reel)}, kârlılık (ROE) artışı ${yuz(R.roe_ivme)}. Kalite: F-skoru ${yuz(R.F)}, ROE ${yuz(R.roe)}. Değerleme: kâr/piyasa değeri ${yuz(R.kaz_get)}, PD/DD ucuzluğu ${yuz(R.pddd)}. Sürpriz = bu çeyreğin kârı, geçen yılın aynı çeyreğinin M3 kadar büyütülmüş halinden ne kadar iyi (şirketin kendi oynaklığına göre). 2020–2026 testinde en güçlü işaretler kâr sürprizi ve satış büyümesiydi; iki sürprizin de en kötü %20’de olması ise ucuz ve kaliteli şirketlerde bile kaybettirdi.</p>
     </section>`;
   }
@@ -477,9 +471,9 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   document.addEventListener('click', (e) => {
     const gb = e.target.closest('[data-grp]');
     if (gb) { const G = GROUPS.find(x => x[0] === gb.dataset.grp); st.tab = load('tab_' + G[0], G[2][0]); if (!G[2].includes(st.tab)) st.tab = G[2][0];
-      st.q = ''; $('#q').value = ''; save('tab3', st.tab); render(); return; }
+      st.q = ''; $('#q').value = ''; save('tab4', st.tab); render(); return; }
     const tb = e.target.closest('[data-tab]');
-    if (tb) { st.tab = tb.dataset.tab; st.q = ''; $('#q').value = ''; save('tab3', st.tab); save('tab_' + grpOf(st.tab), st.tab); render(); return; }
+    if (tb) { st.tab = tb.dataset.tab; st.q = ''; $('#q').value = ''; save('tab4', st.tab); save('tab_' + grpOf(st.tab), st.tab); render(); return; }
     const tf = e.target.closest('[data-tf]');
     if (tf) { st.tf = tf.dataset.tf; save('tf', st.tf); render(); return; }
     if (e.target.closest('[data-back]')) { if (history.length > 1) history.back(); else location.hash = ''; }
