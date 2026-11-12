@@ -191,7 +191,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler. Sistem bunlarda BEKLE der."],
     ['tum', 'Tümü', 'Bütün hisseler, alfabetik. BEKLE: ya ucuz değil ya da çok şart eksik.']
   ];
-  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20’de), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20) ve fiyatı henüz kaçmamış (son 20 günde endeksten en fazla %10, son 5 günde en fazla %15 yükselmiş). Sıra: temel puan. 2020–2026 testinde bu grup bilanço sonrası 3 ayda BIST100’ü ortalama 5,7 puan geçti (%55’i geçti), 6 ayda 9,8 puan. Garanti değil; bir hisse yanılabilir.']);
+  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20’de), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20) ve fiyatı henüz kaçmamış (son 20 günde endeksten en fazla %10, son 5 günde en fazla %15 yükselmiş). Son 20 günde %25’ten fazla düşen ya da üst üste taban yapanlar çıkarıldı. Sıra: temel puan. 2020–2026 testinde bu grup bilanço sonrası 3 ayda BIST100’ü ortalama 5,7 puan geçti (%55’i geçti), 6 ayda 9,8 puan. Garanti değil; bir hisse yanılabilir.']);
   const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
                   ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
                   ['temel', 'Temel sıra', ['temel']]];
@@ -304,6 +304,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
           ${r.yeni_sinyal ? '<span class="new">YENİ</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Kotu bilanco surprizi') ? '<span class="warnb" title="Son bilanço kötü sürpriz">⚠ Bilanço</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Hizli yukseldi') ? '<span class="warnb" title="Son 5 günde %15+ ya da 20 günde endeksten %30+ yükseldi">⚡ Hızlı</span>' : ''}
+          ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Sert dusus') ? '<span class="warnb" title="Son 20 günde %25+ düştü ya da üst üste taban yaptı">▼ Sert düşüş</span>' : ''}
           <span class="badge b-${esc(r.sinyal)}">${esc(trLbl(r.sinyal))}</span>
           <small class="mono">${esc(rightText(r, tab, s))}</small>
         </span></a>`;
@@ -420,7 +421,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   }
 
   const ETK = {'Bilanco ivmesi guclu': ['Bilanço ivmesi güçlü', 'ok'], 'Kotu bilanco surprizi': ['Kötü bilanço sürprizi', 'kotu'],
-               'Zarardan kara dondu': ['Zarardan kâra döndü', 'ok'], 'Kaliteli bilanco': ['Kaliteli bilanço', 'ok'], 'Hizli yukseldi': ['Hızlı yükseldi (fiyatlanmış olabilir)', 'kotu'], 'Zayif bilanco': ['Zayıf bilanço', 'kotu']};
+               'Zarardan kara dondu': ['Zarardan kâra döndü', 'ok'], 'Kaliteli bilanco': ['Kaliteli bilanço', 'ok'], 'Hizli yukseldi': ['Hızlı yükseldi (fiyatlanmış olabilir)', 'kotu'], 'Sert dusus': ['Sert düşüş / taban serisi', 'kotu'], 'Zayif bilanco': ['Zayıf bilanço', 'kotu']};
   function v3Card(k) {
     const v = k.v3;
     if (!v || v.toplam == null) return '';
