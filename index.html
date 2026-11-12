@@ -62,6 +62,11 @@ header.top{background:var(--card);border-bottom:1px solid var(--line);position:s
 .grp[aria-pressed="true"]{background:var(--card,#fff);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .grp .n{font-weight:500;color:var(--mute);font-size:12px}
 .warnb{font-size:11px;font-weight:700;color:var(--warn-ink);border:1px solid var(--warn-ink);border-radius:999px;padding:1px 7px}
+.fazb{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
+.fazb small{font-weight:500;opacity:.8}
+.fazb.iki{background:var(--acc);color:#fff}
+.fazb.bir{border:1px solid var(--acc);color:var(--acc)}
+.fazb.yok{color:var(--mute);border:1px solid var(--line)}
 .bakim{margin:16px 0 0;padding:10px 14px;border:1px solid var(--warn-ink);border-radius:10px;font-size:13px;color:var(--ink2)}
 .bakim ul{margin:6px 0;padding-left:18px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
@@ -194,7 +199,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler. Sistem bunlarda BEKLE der."],
     ['tum', 'Tümü', 'Bütün hisseler, alfabetik. BEKLE: ya ucuz değil ya da çok şart eksik.']
   ];
-  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20’de), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20) ve fiyatı henüz kaçmamış (son 20 günde endeksten en fazla %10, son 5 günde en fazla %15 yükselmiş). Son 20 günde %25’ten fazla düşen ya da üst üste taban yapanlar çıkarıldı. Sıra: temel puan. 2020–2026 testinde bu grup bilanço sonrası 3 ayda BIST100’ü ortalama 5,7 puan geçti (%55’i geçti), 6 ayda 9,8 puan. Garanti değil; bir hisse yanılabilir.']);
+  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20), fiyatı kaçmamış (20 günde endeksten en fazla +%10, 5 günde en fazla +%15) ve hisseye özel çöküş yok. ✓ işareti: faz motoru alım tarafında (normal ve/veya Heikin Ashi mum). Testteki kural: ✓ olunca al; yeni bilançoda temel puanı düşene ya da kötü sürpriz gelene kadar, en fazla 6 ay tut; DAĞITIM etiketine bakıp satma. 2022–2026 simülasyonunda iki ✓ ile alınanlar BIST100’ü işlem başına ortalama ~8 puan geçti (medyan +2, %54’ü geçti); kriz dönemlerinde alınanlar daha da iyi. Garanti değil; tek hisseye değil birkaçına dağıtın.']);
   const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
                   ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
                   ['temel', 'Temel sıra', ['temel']]];
@@ -310,13 +315,21 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
           ${r.yeni_sinyal ? '<span class="new">YENİ</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Kotu bilanco surprizi') ? '<span class="warnb" title="Son bilanço kötü sürpriz">⚠ Bilanço</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Hizli yukseldi') ? '<span class="warnb" title="Son 5 günde %15+ ya da 20 günde endeksten %30+ yükseldi">⚡ Hızlı</span>' : ''}
-          ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Sert dusus') ? '<span class="warnb" title="Son 20 günde %25+ düştü ya da üst üste taban yaptı">▼ Sert düşüş</span>' : ''}
+          ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Sert dusus') ? '<span class="warnb" title="Son 20 günde endeksten %25+ fazla düştü ya da taban serisi (piyasa geneli değil)">▼ Sert düşüş</span>' : ''}
+          ${tab === 'firsat' ? fazBadge(s) : ''}
           <span class="badge b-${esc(r.sinyal)}">${esc(trLbl(r.sinyal))}</span>
           <small class="mono">${esc(rightText(r, tab, s))}</small>
         </span></a>`;
     }).join('');
   }
 
+  function fazBadge(s) {
+    const f = s.faz || {}; const n = f.normal || {}, h = f.ha || {};
+    const k = (n.alim ? 1 : 0) + (h.alim ? 1 : 0);
+    if (!k) return `<span class="fazb yok" title="Faz motoru: normal ${esc(trLbl(n.sinyal))}, Heikin Ashi ${esc(trLbl(h.sinyal))}">bekle</span>`;
+    const ne = [n.alim ? 'normal' : '', h.alim ? 'HA' : ''].filter(Boolean).join(' + ');
+    return `<span class="fazb ${k === 2 ? 'iki' : 'bir'}" title="Faz motoru alım tarafında: ${ne}">${k === 2 ? '✓✓ al' : '✓ al'} <small>${ne}</small></span>`;
+  }
   function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
 
   function renderDetail(t) {
@@ -381,6 +394,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
           ${kv('Toplam skor', nf(r.toplam, 1) + ' / 60', r.toplam / 6)}
           ${kv('Kalite', stars(r.kalite), null)}
           ${kv('Önceki sinyal', esc(trLbl(r.onceki_sinyal)), null)}
+          ${s.faz ? kv('Faz motoru (günlük)', esc(trLbl((s.faz.normal || {}).sinyal)) + ' · ' + ((s.faz.normal || {}).gun || '–') + ' gün', null) : ''}
+          ${s.faz ? kv('Faz motoru (Heikin Ashi)', esc(trLbl((s.faz.ha || {}).sinyal)) + ' · ' + ((s.faz.ha || {}).gun || '–') + ' gün', null) : ''}
           <div class="links">
             <a class="btn" href="https://tr.tradingview.com/chart/?symbol=BIST:${encodeURIComponent(s.t)}" target="_blank" rel="noopener">TradingView'de aç</a>
           </div>
@@ -427,7 +442,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   }
 
   const ETK = {'Bilanco ivmesi guclu': ['Bilanço ivmesi güçlü', 'ok'], 'Kotu bilanco surprizi': ['Kötü bilanço sürprizi', 'kotu'],
-               'Zarardan kara dondu': ['Zarardan kâra döndü', 'ok'], 'Kaliteli bilanco': ['Kaliteli bilanço', 'ok'], 'Hizli yukseldi': ['Hızlı yükseldi (fiyatlanmış olabilir)', 'kotu'], 'Sert dusus': ['Sert düşüş / taban serisi', 'kotu'], 'Zayif bilanco': ['Zayıf bilanço', 'kotu']};
+               'Zarardan kara dondu': ['Zarardan kâra döndü', 'ok'], 'Kaliteli bilanco': ['Kaliteli bilanço', 'ok'], 'Hizli yukseldi': ['Hızlı yükseldi (fiyatlanmış olabilir)', 'kotu'], 'Sert dusus': ['Hisseye özel sert düşüş', 'kotu'], 'Zayif bilanco': ['Zayıf bilanço', 'kotu']};
   function v3Card(k) {
     const v = k.v3;
     if (!v || v.toplam == null) return '';
