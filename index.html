@@ -62,6 +62,8 @@ header.top{background:var(--card);border-bottom:1px solid var(--line);position:s
 .grp[aria-pressed="true"]{background:var(--card,#fff);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .grp .n{font-weight:500;color:var(--mute);font-size:12px}
 .warnb{font-size:11px;font-weight:700;color:var(--warn-ink);border:1px solid var(--warn-ink);border-radius:999px;padding:1px 7px}
+.bakim{margin:16px 0 0;padding:10px 14px;border:1px solid var(--warn-ink);border-radius:10px;font-size:13px;color:var(--ink2)}
+.bakim ul{margin:6px 0;padding-left:18px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
 .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--ctl-line);color:var(--ink2)}
 .chip.ok{color:var(--acc);border-color:var(--acc)}
@@ -174,6 +176,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 
   <section id="detail" class="hidden" aria-live="polite"></section>
 
+  <div id="bakim" class="bakim hidden" role="note"></div>
   <footer id="foot">Yatırım tavsiyesi değildir.</footer>
 </main>
 
@@ -230,6 +233,9 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     $('#m-m3').textContent = nf(p.m3 / 1e12, 2) + ' tr ₺';
     $('#m-mk').textContent = trLbl(p.makro);
     const d = st.data.olusturma ? st.data.olusturma.replace(/(\d{4})-(\d\d)-(\d\d)/, '$3.$2.$1') : '';
+    const bk = (st.data.bakim && st.data.bakim.uyarilar) || [];
+    $('#bakim').classList.toggle('hidden', !bk.length);
+    $('#bakim').innerHTML = bk.length ? `<b>Bakım gerekiyor (${bk.length})</b><ul>${bk.map(u => `<li>${esc(u)}</li>`).join('')}</ul><small>Claude'a “bakım uyarılarını kontrol et ve düzelt” yazmanız yeterli.</small>` : '';
     $('#foot').textContent = `Son tarama: ${d} · Veri: ${p.xu100_tarih.split('-').reverse().join('.')} kapanışı · ${st.data.surum || ''} · Yatırım tavsiyesi değildir.`;
   }
 
