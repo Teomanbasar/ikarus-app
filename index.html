@@ -57,6 +57,11 @@ header.top{background:var(--card);border-bottom:1px solid var(--line);position:s
 .tabs{display:flex;gap:8px;overflow-x:auto;padding:10px 0;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
 .tab{flex:none;min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--ctl-line);background:var(--card);color:var(--ink2);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.groups{display:flex;gap:6px;margin:12px 0 8px;padding:4px;background:var(--track);border-radius:12px}
+.grp{flex:1;border:0;background:transparent;color:var(--ink2);font:inherit;font-weight:600;font-size:14px;padding:9px 6px;border-radius:9px;cursor:pointer}
+.grp[aria-pressed="true"]{background:var(--card,#fff);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.grp .n{font-weight:500;color:var(--mute);font-size:12px}
+.warnb{font-size:11px;font-weight:700;color:var(--warn-ink);border:1px solid var(--warn-ink);border-radius:999px;padding:1px 7px}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 6px}
 .chip{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid var(--ctl-line);color:var(--ink2)}
 .chip.ok{color:var(--acc);border-color:var(--acc)}
@@ -160,6 +165,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 <main class="wrap">
   <section id="home">
     <div class="search"><input id="q" type="search" placeholder="Hisse ara: THYAO, Akbank…" autocomplete="off" aria-label="Hisse ara"></div>
+    <div class="groups" id="groups" aria-label="Bölümler"></div>
     <div class="tabs" role="tablist" aria-label="Listeler" id="tabs"></div>
     <div class="genel hidden" id="genel" role="note"></div>
     <p class="hint" id="hint"></p>
@@ -186,11 +192,16 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler. Sistem bunlarda BEKLE der."],
     ['tum', 'Tümü', 'Bütün hisseler, alfabetik. BEKLE: ya ucuz değil ya da çok şart eksik.']
   ];
-  const SIGDESC = Object.fromEntries(TABS.slice(0, 4).map(t => [t[0], t[2]]));
+  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20’de) ve teknikte alım tarafında (Alınabilir, Toplanıyor veya Yakın) olan hisseler. Son bilançosu kötü sürpriz olanlar çıkarıldı. Sıra: önce sinyal, sonra temel puan. 2020–2026 testinde güçlü bilanço ile teknikte ucuzluğun birlikte olduğu durum en iyi sonucu verdi.']);
+  const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
+                  ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
+                  ['temel', 'Temel', ['temel', 'temel_ucuz']]];
+  const grpOf = (tab) => (GROUPS.find(g => g[2].includes(tab)) || GROUPS[0])[0];
+  const SIGDESC = Object.fromEntries(TABS.slice(1, 5).map(t => [t[0], t[2]]));
   SIGDESC.BEKLE = 'Ya ucuz değil ya da 3+ şart eksik; ya da fiyat önceki Stop’un %3,5’ten fazla altında (stop kırıldı). Bekle.';
   const COND = {Percentile:'Ucuz: Percentile ≤ 35', Recovery:'Toparlanma: Recovery ≥ 6', Kalite:'Kalite: Toplam ≥ 36',
                 MTF:'Haftalık onay: MTF ≤ 50', Hacim:'Hacim ≥ 1,20× ortalama', Macro:'Makro: GENİŞLEME veya RISK-ON'};
-  const st = { tf: load('tf', 'D'), tab: load('tab2', 'ALINABILIR'), q: '', data: null };
+  const st = { tf: load('tf', 'D'), tab: load('tab3', 'firsat'), q: '', data: null };
   const $ = (s) => document.querySelector(s);
   const nf = (x, d = 2) => x == null || isNaN(x) ? '–' : Number(x).toLocaleString('tr-TR', {minimumFractionDigits: d, maximumFractionDigits: d});
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -232,6 +243,12 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     let ts;
     if (tab === 'tum') ts = stocks().map(s => s.t).sort();
     else if (SIGDESC[tab]) ts = (LL.sinyal || []).filter(t => sig(t) === tab);
+    else if (tab === 'firsat') {
+      const SR = {ALINABILIR: 0, TOPLANIYOR: 1, YAKIN: 2};
+      ts = stocks().filter(s => { const v = s.temel && s.temel.v3; const r = s[st.tf];
+          return v && r && v.dilim === 5 && SR[r.sinyal] != null && !(v.etiketler || []).includes('Kotu bilanco surprizi'); })
+        .sort((a, b) => SR[a[st.tf].sinyal] - SR[b[st.tf].sinyal] || b.temel.v3.toplam - a.temel.v3.toplam).map(s => s.t);
+    }
     else if (tab === 'yeni') ts = (LL.yeni || []).filter(t => ALIM.includes(sig(t)));
     else if (tab === 'ucuz') ts = (LL.ucuz || []).filter(t => M[t] && M[t][st.tf]).sort((a, b) => (M[b][st.tf].toplam || 0) - (M[a][st.tf].toplam || 0));
     else ts = LL[tab] || [];
@@ -246,7 +263,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 
   function rightText(r, tab, s) {
     const v = s && s.temel && s.temel.v3;
-    if ((tab === 'temel' || tab === 'temel_ucuz') && v) return 'Temel ' + nf(100 * v.toplam, 0) + (v.etiketler && v.etiketler.includes('Kotu bilanco surprizi') ? ' · ⚠' : '');
+    if ((tab === 'temel' || tab === 'temel_ucuz' || tab === 'firsat') && v) return 'Temel ' + nf(100 * v.toplam, 0) + (v.etiketler && v.etiketler.includes('Kotu bilanco surprizi') ? ' · ⚠' : '');
     if (tab === 'ucuz') return 'Pct ' + nf(r.percentile, 1) + ' · Toplam ' + nf(r.toplam, 1);
     if (tab === 'pahali') return 'Pct ' + nf(r.percentile, 1);
     if (tab === 'stop') return "Stop'a " + nf(r.d_stop, 1) + '%';
@@ -254,10 +271,15 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   }
 
   function renderTabs() {
-    const L = st.data ? st.data.listeler[st.tf] : {};
-    $('#tabs').innerHTML = TABS.map(([id, label]) => {
-      const n = st.data ? listFor(id, true).length : 0;
-      return `<button type="button" class="tab" role="tab" data-tab="${id}" aria-selected="${st.tab === id && !st.q}">${esc(label)} <span class="n">${n}</span></button>`;
+    const g = grpOf(st.tab);
+    const cnt = (id) => st.data ? listFor(id, true).length : 0;
+    $('#groups').innerHTML = GROUPS.map(([id, label, tabs]) =>
+      `<button type="button" class="grp" data-grp="${id}" aria-pressed="${g === id && !st.q}">${esc(label)}${tabs.length === 1 ? ` <span class="n">${cnt(tabs[0])}</span>` : ''}</button>`).join('');
+    const tabs = (GROUPS.find(x => x[0] === g) || GROUPS[0])[2];
+    $('#tabs').classList.toggle('hidden', tabs.length < 2);
+    $('#tabs').innerHTML = tabs.map(id => {
+      const label = (TABS.find(t => t[0] === id) || [id, id])[1];
+      return `<button type="button" class="tab" role="tab" data-tab="${id}" aria-selected="${st.tab === id && !st.q}">${esc(label)} <span class="n">${cnt(id)}</span></button>`;
     }).join('');
   }
 
@@ -272,7 +294,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const S = stocks().filter(x => x[st.tf]);
     const dipte = S.filter(x => x[st.tf].percentile <= 20).length;
     const oran = S.length ? Math.round(100 * dipte / S.length) : 0;
-    $('#genel').classList.toggle('hidden', oran < 50 || !!st.q);
+    $('#genel').classList.toggle('hidden', oran < 50 || !!st.q || grpOf(tab) !== 'teknik');
     $('#genel').innerHTML = `<b>Piyasanın %${oran}'i son 200 ${st.tf === 'W' ? 'haftanın' : 'günün'} dibinde.</b> Bütün borsa birlikte düştüğü için “ucuz” etiketi bugün hisseleri ayırmıyor.`;
     const L = listFor(tab);
     if (!L.length) { $('#list').innerHTML = `<div class="empty">Bu listede bugün hisse yok.</div>`; return; }
@@ -287,6 +309,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         </span>
         <span class="r">
           ${r.yeni_sinyal ? '<span class="new">YENİ</span>' : ''}
+          ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Kotu bilanco surprizi') ? '<span class="warnb" title="Son bilanço kötü sürpriz">⚠ Bilanço</span>' : ''}
           <span class="badge b-${esc(r.sinyal)}">${esc(trLbl(r.sinyal))}</span>
           <small class="mono">${esc(rightText(r, tab, s))}</small>
         </span></a>`;
@@ -452,8 +475,11 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   }
 
   document.addEventListener('click', (e) => {
+    const gb = e.target.closest('[data-grp]');
+    if (gb) { const G = GROUPS.find(x => x[0] === gb.dataset.grp); st.tab = load('tab_' + G[0], G[2][0]); if (!G[2].includes(st.tab)) st.tab = G[2][0];
+      st.q = ''; $('#q').value = ''; save('tab3', st.tab); render(); return; }
     const tb = e.target.closest('[data-tab]');
-    if (tb) { st.tab = tb.dataset.tab; st.q = ''; $('#q').value = ''; save('tab2', st.tab); render(); return; }
+    if (tb) { st.tab = tb.dataset.tab; st.q = ''; $('#q').value = ''; save('tab3', st.tab); save('tab_' + grpOf(st.tab), st.tab); render(); return; }
     const tf = e.target.closest('[data-tf]');
     if (tf) { st.tf = tf.dataset.tf; save('tf', st.tf); render(); return; }
     if (e.target.closest('[data-back]')) { if (history.length > 1) history.back(); else location.hash = ''; }
