@@ -204,7 +204,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler. Sistem bunlarda BEKLE der."],
     ['tum', 'Tümü', 'Bütün hisseler, alfabetik. BEKLE: ya ucuz değil ya da çok şart eksik.']
   ];
-  TABS.unshift(['elde', 'Eldekiler', 'Elinizdeki hisseleri ekleyin; her akşamki taramayla kontrol edilir (günlük veri). SAT: (1) Kâr al: fiyat son 200 günün pahalı bölgesine geldi (Percentile ≥ 80) — 2022–2026 testinde en iyi çıkış buydu (çıkışlar ortalama endeksi +23 puan geçmiş, işlem başına medyan +4,9); (2) Temel bozuldu: temel puan sırası %60’ın altına düştü ya da kötü bilanço sürprizi geldi. DİKKAT: stop kırıldı ya da faz motoru 10+ gündür DAĞITIM — testte bu durumlarda satmak ortalama kaybettirdi (sonra toparlandı), o yüzden yalnız uyarı. Listeler bu tarayıcıda saklanır; telefon ve bilgisayarda ayrı ayrı eklemeniz gerekir.']);
+  TABS.unshift(['elde', 'Eldekiler', 'Elinizdeki hisseleri ekleyin; her akşamki taramayla kontrol edilir (günlük veri). SAT: (1) Kâr al: fiyat son 200 günün pahalı bölgesine geldi (Percentile ≥ 80) — 2022–2026 testinde en iyi çıkış buydu (çıkışlar ortalama endeksi +23 puan geçmiş, işlem başına medyan +4,9); (2) Temel bozuldu: temel puan sırası %60’ın altına düştü ya da kötü bilanço sürprizi geldi. DİKKAT: stop kırıldı ya da faz motoru 10+ gündür DAĞITIM — testte bu durumlarda satmak ortalama kaybettirdi (sonra toparlandı), o yüzden yalnız uyarı. Kalıcı liste için Telegram botuna "ekle KCHOL 250" yazın: bulutta saklanır, her cihazda görünür, akşam özetinde de kararı gelir. Buradan eklenenler yalnız bu tarayıcıda kalır.']);
   TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20), fiyatı kaçmamış (20 günde endeksten en fazla +%10, 5 günde en fazla +%15) ve hisseye özel çöküş yok. ✓ işareti: faz motoru alım tarafında (normal ve/veya Heikin Ashi mum). Testteki kural: ✓ olunca al; yeni bilançoda temel puanı düşene ya da kötü sürpriz gelene kadar, en fazla 6 ay tut; DAĞITIM etiketine bakıp satma. 2022–2026 simülasyonunda iki ✓ ile alınanlar BIST100’ü işlem başına ortalama ~8 puan geçti (medyan +2, %54’ü geçti); kriz dönemlerinde alınanlar daha da iyi. Garanti değil; tek hisseye değil birkaçına dağıtın.']);
   const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
                   ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
@@ -231,6 +231,10 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     } catch (e) {
       st.data = null;
     }
+    try {
+      const r2 = await fetch('data/elde.json?t=' + Date.now(), {cache: 'no-store'});
+      st.bulut = r2.ok ? ((await r2.json()).liste || []) : [];
+    } catch (e) { st.bulut = st.bulut || []; }
     render();
   }
 
@@ -332,8 +336,15 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     }).join('');
   }
 
-  function elde() { try { return JSON.parse(localStorage.getItem('ik_elde') || '[]'); } catch (e) { return []; } }
-  function eldeKaydet(L) { try { localStorage.setItem('ik_elde', JSON.stringify(L)); } catch (e) {} }
+  // Bulut listesi (Telegram: "ekle KCHOL 250") her cihazda gorunur; tarayici listesi yalniz bu cihazda.
+  function eldeYerel() { try { return JSON.parse(localStorage.getItem('ik_elde') || '[]'); } catch (e) { return []; } }
+  function elde() {
+    const B = (st.bulut || []).map(x => Object.assign({}, x, {bulut: true}));
+    const bt = new Set(B.map(x => x.t));
+    return B.concat(eldeYerel().filter(x => !bt.has(x.t)));
+  }
+  function eldeKaydet(L) { try { localStorage.setItem('ik_elde', JSON.stringify(L.filter(x => !x.bulut).map(({t, fiyat, tarih}) => ({t, fiyat, tarih})))); } catch (e) {} }
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
   function eldeKarar(s) {
     const r = s.D || {}, v = (s.temel && s.temel.v3) || {}, f = s.faz || {};
     const sat = [], dikkat = [];
@@ -352,11 +363,13 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <input id="eT" placeholder="Hisse kodu (KCHOL)" autocomplete="off" required>
         <input id="eF" placeholder="Alış fiyatı (isteğe bağlı)" inputmode="decimal">
         <input id="eD" type="date" title="Alış tarihi (isteğe bağlı)">
-        <button type="submit">Ekle</button></form>`;
+        <button type="submit">Ekle</button>
+        <small style="grid-column:1/-1;color:var(--ink2)">Buradan eklenenler yalnız bu cihazda kalır ve tarayıcı silebilir. Kalıcı ve her cihazda görünmesi için Telegram botuna yazın: <b class="mono">ekle KCHOL 250</b> · <b class="mono">cikar KCHOL</b> · <b class="mono">eldekiler</b> (☁ işaretliler buluttan gelir).</small></form>`;
     const sg = (x) => (x >= 0 ? '+' : '−') + nf(Math.abs(x)) + '%';
     const kart = (h, i) => {
       const s = M[h.t];
-      if (!s || !s.D) return `<div class="row"><span class="l"><b>${esc(h.t)}</b><small>Taramada bulunamadı</small></span><span class="r"><button class="sil" data-sil="${i}">Çıkar</button></span></div>`;
+      const silB = h.bulut ? `<small title="Telegram'a 'cikar ${esc(h.t)}' yazın">☁ bulut</small>` : `<button class="sil" data-sil="${i}" title="Listeden çıkar">Çıkar</button>`;
+      if (!s || !s.D) return `<div class="row"><span class="l"><b>${esc(h.t)}</b><small>Taramada bulunamadı</small></span><span class="r">${silB}</span></div>`;
       const r = s.D, k = eldeKarar(s), v = (s.temel && s.temel.v3) || {};
       const get = h.fiyat ? 100 * (r.fiyat / h.fiyat - 1) : null;
       const cls = k.karar === 'SAT' ? 'warnb' : (k.karar === 'DİKKAT' ? 'fazb bir' : 'fazb iki');
@@ -371,7 +384,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <span class="r">
           <span class="${cls}">${k.karar}</span>
           <small class="mono">Temel ${v.toplam != null ? nf(100 * v.toplam, 0) : '–'} · P ${nf(r.percentile, 0)}</small>
-          <button class="sil" data-sil="${i}" title="Listeden çıkar">Çıkar</button>
+          ${silB}
         </span></div>`;
     };
     $('#list').innerHTML = form + (L.length ? L.map(kart).join('') : `<div class="empty" style="grid-column:1/-1">Henüz hisse eklemediniz. Elinizdeki hisseleri yukarıdan ekleyin.</div>`);
@@ -380,7 +393,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
       const t = $('#eT').value.trim().toLocaleUpperCase('tr-TR').replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, '');
       if (!t) return;
       const f = parseFloat(($('#eF').value || '').replace(',', '.'));
-      const L2 = elde().filter(x => x.t !== t);
+      const L2 = eldeYerel().filter(x => x.t !== t);
       L2.push({t, fiyat: isFinite(f) && f > 0 ? f : null, tarih: $('#eD').value || null});
       eldeKaydet(L2); renderTabs(); renderElde();
     });
