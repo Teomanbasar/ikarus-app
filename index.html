@@ -199,12 +199,14 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     ['stop', "Stop'u kıranlar", "Önceki Stop seviyesinin %3,5'ten fazla altına inenler. Sistem bunlarda BEKLE der."],
     ['tum', 'Tümü', 'Bütün hisseler, alfabetik. BEKLE: ya ucuz değil ya da çok şart eksik.']
   ];
+  TABS.unshift(['takip', 'Elde tut', 'Fırsatlar’a (günlük) ✓ ile girdiği gün “alındı” sayılan hisseler. Fırsatlar listesinden çıkması satış sebebi değil: 2022–2026 simülasyonunda kâr, hisse listeden çıktıktan sonra da tutularak geldi. Satış sebebi yalnız üçü: temel puan sırası %60’ın altına düşerse (yeni bilanço kötüleşirse), kötü bilanço sürprizi gelirse ya da 6 ay (126 işlem günü) dolarsa. DAĞITIM etiketi satış sebebi değil. Getiriler giriş günü kapanışına göre; BIST100’e göre fark ayrıca yazılı.']);
   TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20), fiyatı kaçmamış (20 günde endeksten en fazla +%10, 5 günde en fazla +%15) ve hisseye özel çöküş yok. ✓ işareti: faz motoru alım tarafında (normal ve/veya Heikin Ashi mum). Testteki kural: ✓ olunca al; yeni bilançoda temel puanı düşene ya da kötü sürpriz gelene kadar, en fazla 6 ay tut; DAĞITIM etiketine bakıp satma. 2022–2026 simülasyonunda iki ✓ ile alınanlar BIST100’ü işlem başına ortalama ~8 puan geçti (medyan +2, %54’ü geçti); kriz dönemlerinde alınanlar daha da iyi. Garanti değil; tek hisseye değil birkaçına dağıtın.']);
   const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
                   ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
+                  ['takip', 'Elde tut', ['takip']],
                   ['temel', 'Temel sıra', ['temel']]];
   const grpOf = (tab) => (GROUPS.find(g => g[2].includes(tab)) || GROUPS[0])[0];
-  const SIGDESC = Object.fromEntries(TABS.slice(1, 5).map(t => [t[0], t[2]]));
+  const SIGDESC = Object.fromEntries(TABS.filter(t => ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM'].includes(t[0])).map(t => [t[0], t[2]]));
   SIGDESC.BEKLE = 'Ya ucuz değil ya da 3+ şart eksik; ya da fiyat önceki Stop’un %3,5’ten fazla altında (stop kırıldı). Bekle.';
   const COND = {Percentile:'Ucuz: Percentile ≤ 35', Recovery:'Toparlanma: Recovery ≥ 6', Kalite:'Kalite: Toplam ≥ 36',
                 MTF:'Haftalık onay: MTF ≤ 50', Hacim:'Hacim ≥ 1,20× ortalama', Macro:'Makro: GENİŞLEME veya RISK-ON'};
@@ -253,6 +255,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     let ts;
     if (tab === 'tum') ts = stocks().map(s => s.t).sort();
     else if (SIGDESC[tab]) ts = (LL.sinyal || []).filter(t => sig(t) === tab);
+    else if (tab === 'takip') ts = ((st.data.takip || {}).acik || []).map(x => x.t).concat(((st.data.takip || {}).kapanan || []).map(x => x.t));
     else if (tab === 'yeni') ts = (LL.yeni || []).filter(t => ALIM.includes(sig(t)));
     else if (tab === 'ucuz') ts = (LL.ucuz || []).filter(t => M[t] && M[t][st.tf]).sort((a, b) => (M[b][st.tf].toplam || 0) - (M[a][st.tf].toplam || 0));
     else ts = LL[tab] || [];
@@ -301,6 +304,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     $('#genel').classList.toggle('hidden', oran < 50 || !!st.q || grpOf(tab) !== 'teknik');
     $('#genel').innerHTML = `<b>Piyasanın %${oran}'i son 200 ${st.tf === 'W' ? 'haftanın' : 'günün'} dibinde.</b> Bütün borsa birlikte düştüğü için “ucuz” etiketi bugün hisseleri ayırmıyor.`;
     const L = listFor(tab);
+    if (tab === 'takip' && !st.q) { renderTakip(); return; }
     if (!L.length) { $('#list').innerHTML = `<div class="empty">Bu listede bugün hisse yok.</div>`; return; }
     $('#list').innerHTML = L.slice(0, 400).map(s => {
       const r = s[st.tf];
@@ -321,6 +325,32 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
           <small class="mono">${esc(rightText(r, tab, s))}</small>
         </span></a>`;
     }).join('');
+  }
+
+  function renderTakip() {
+    const K = st.data.takip || {acik: [], kapanan: []};
+    const M = byT();
+    const sg = (x) => (x >= 0 ? '+' : '−') + nf(Math.abs(x)) + '%';
+    const tarih = (d) => d ? d.split('-').reverse().join('.') : '–';
+    const kart = (p, kapali) => {
+      const s = M[p.t] || {};
+      return `<a class="row" href="#/${encodeURIComponent(p.t)}">
+        <span class="l">
+          <span class="t"><b>${esc(p.t)}</b><span class="nm">${esc(s.ad || '')}</span></span>
+          <span class="p mono">${nf(p.fiyat)} → ${nf(p.son ?? p.fiyat)} ₺ <span class="${(p.getiri || 0) >= 0 ? 'chg-up' : 'chg-down'}">${sg(p.getiri || 0)}</span></span>
+          <small class="mono" style="color:var(--mute)">Giriş ${tarih(p.giris)} · BIST’e göre ${sg(p.fazla || 0)}${kapali ? '' : ` · ${p.kalan ?? 126} gün kaldı`}</small>
+        </span>
+        <span class="r">
+          ${kapali ? `<span class="warnb">SAT</span><small>${esc(p.neden || '')}</small>` : `<span class="fazb iki">TUT</span>`}
+          ${!kapali && p.firsatta === false ? '<small style="color:var(--mute)">listeden çıktı, tutmaya devam</small>' : ''}
+          <small class="mono">Temel ${p.temel_simdi != null ? nf(100 * p.temel_simdi, 0) : (p.temel != null ? nf(100 * p.temel, 0) : '–')}</small>
+        </span></a>`;
+    };
+    const acik = K.acik || [], kap = K.kapanan || [];
+    const ort = acik.length ? acik.reduce((a, p) => a + (p.fazla || 0), 0) / acik.length : 0;
+    $('#list').innerHTML = (acik.length ? `<div class="empty" style="grid-column:1/-1;text-align:left">${acik.length} açık pozisyon · ortalama BIST’e göre ${sg(ort)}</div>` : `<div class="empty">Henüz açık pozisyon yok.</div>`)
+      + acik.map(p => kart(p, false)).join('')
+      + (kap.length ? `<div class="empty" style="grid-column:1/-1;text-align:left">Son 10 günde satış sinyali alanlar</div>` + kap.map(p => kart(p, true)).join('') : '');
   }
 
   function fazBadge(s) {
