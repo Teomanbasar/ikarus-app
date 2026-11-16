@@ -63,10 +63,25 @@ header.top{background:var(--card);border-bottom:1px solid var(--line);position:s
 .grp .n{font-weight:500;color:var(--mute);font-size:12px}
 .warnb{font-size:11px;font-weight:700;color:var(--warn-ink);border:1px solid var(--warn-ink);border-radius:999px;padding:1px 7px}
 .fazb{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap}
-.fazb small{font-weight:500;opacity:.8}
+.fazb small{font-weight:500;opacity:.85}
+.fazb.iki small{color:#fff !important}
 .fazb.iki{background:var(--acc);color:#fff}
 .fazb.bir{border:1px solid var(--acc);color:var(--acc)}
 .fazb.yok{color:var(--mute);border:1px solid var(--line)}
+.kutu{border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin:0 0 12px;display:flex;flex-direction:column;gap:8px}
+.kutu .kb{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.kutu .kk{font-size:20px;font-weight:800;letter-spacing:.2px}
+.kutu.al{border-color:var(--acc)} .kutu.al .kk{color:var(--acc)}
+.kutu.bekle .kk{color:var(--ink)} .kutu.sat{border-color:var(--warn-ink)} .kutu.sat .kk{color:var(--warn-ink)}
+.kutu.uzak .kk,.kutu.yok .kk{color:var(--mute)}
+.kutu .adim{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.kutu .adim div{font-size:11.5px;border:1px solid var(--line);border-radius:8px;padding:5px 7px;line-height:1.3}
+.kutu .adim div.ok{border-color:var(--acc)} .kutu .adim div b{display:block;font-size:12px}
+.kutu small{color:var(--ink2);line-height:1.45}
+.kchip{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px;white-space:nowrap;border:1px solid var(--line);color:var(--ink2)}
+.kchip.al{background:var(--acc);color:#fff;border-color:var(--acc)} .kchip.sat{color:var(--warn-ink);border-color:var(--warn-ink)}
+.ayrac{grid-column:1/-1;font-size:12.5px;font-weight:700;color:var(--ink2);padding:10px 2px 2px;border-bottom:1px solid var(--line)}
+@media (max-width:520px){.kutu .adim{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .eldef{display:flex;flex-wrap:wrap;gap:8px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card,#fff)}
 .eldef input{flex:1 1 140px;font:inherit;padding:8px 10px;border:1px solid var(--ctl-line);border-radius:8px;background:transparent;color:var(--ink)}
 .eldef button,.sil{font:inherit;font-weight:600;padding:8px 14px;border-radius:8px;border:1px solid var(--acc);background:var(--acc);color:#fff;cursor:pointer}
@@ -205,7 +220,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     ['tum', 'Tümü', 'Bütün hisseler, alfabetik. BEKLE: ya ucuz değil ya da çok şart eksik.']
   ];
   TABS.unshift(['elde', 'Eldekiler', 'Elinizdeki hisseleri ekleyin; her akşamki taramayla kontrol edilir (günlük veri). SAT: (1) Kâr al: fiyat son 200 günün pahalı bölgesine geldi (Percentile ≥ 80) — 2022–2026 testinde en iyi çıkış buydu (çıkışlar ortalama endeksi +23 puan geçmiş, işlem başına medyan +4,9); (2) Temel bozuldu: temel puan sırası %60’ın altına düştü ya da kötü bilanço sürprizi geldi. DİKKAT: stop kırıldı ya da faz motoru 10+ gündür DAĞITIM — testte bu durumlarda satmak ortalama kaybettirdi (sonra toparlandı), o yüzden yalnız uyarı. Kalıcı liste için Telegram botuna "ekle KCHOL 250" yazın: bulutta saklanır, her cihazda görünür, akşam özetinde de kararı gelir. Buradan eklenenler yalnız bu tarayıcıda kalır.']);
-  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20), fiyatı kaçmamış (20 günde endeksten en fazla +%10, 5 günde en fazla +%15) ve hisseye özel çöküş yok. ✓ işareti: faz motoru alım tarafında (normal ve/veya Heikin Ashi mum). Testteki kural: ✓ olunca al; yeni bilançoda temel puanı düşene ya da kötü sürpriz gelene kadar, en fazla 6 ay tut; DAĞITIM etiketine bakıp satma. 2022–2026 simülasyonunda iki ✓ ile alınanlar BIST100’ü işlem başına ortalama ~8 puan geçti (medyan +2, %54’ü geçti); kriz dönemlerinde alınanlar daha da iyi. Garanti değil; tek hisseye değil birkaçına dağıtın.']);
+  TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20), fiyatı kaçmamış (20 günde endeksten en fazla +%10, 5 günde en fazla +%15) ve hisseye özel çöküş yok. ✓ işareti: faz motoru alım tarafında (normal ve/veya Heikin Ashi mum). Üstte AL (✓ ya da ✓✓, faz motoru alım tarafında), altta İZLE (iyi ve ucuz ama teknik dönmedi). Listeden çıkmak satış sinyali değil. Aldıktan sonra Eldekiler’e ekle: fiyat pahalı bölgeye gelince (Percentile ≥ 80) kâr al, bilanço bozulursa sat; DAĞITIM etiketine bakıp satma (testte kaybettirdi). 2022–2026 simülasyonunda iki ✓ ile alınanlar BIST100’ü işlem başına ortalama ~8 puan geçti (medyan +2, %54’ü geçti); kriz dönemlerinde alınanlar daha da iyi. Garanti değil; tek hisseye değil birkaçına dağıtın.']);
   const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
                   ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
                   ['elde', 'Eldekiler', ['elde']],
@@ -315,7 +330,12 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const L = listFor(tab);
     if (tab === 'elde' && !st.q) { renderElde(); return; }
     if (!L.length) { $('#list').innerHTML = `<div class="empty">Bu listede bugün hisse yok.</div>`; return; }
-    $('#list').innerHTML = L.slice(0, 400).map(s => {
+    const ayr = (tab === 'firsat' && !st.q) ? (() => {
+      const nAl = L.filter(s => (s.faz && ((s.faz.normal || {}).alim || (s.faz.ha || {}).alim))).length;
+      return {0: `<div class="ayrac">AL — faz motoru alım tarafında (${nAl})</div>`,
+              [nAl]: `<div class="ayrac">İZLE — iyi ve ucuz, teknik henüz dönmedi (${L.length - nAl})</div>`};
+    })() : {};
+    $('#list').innerHTML = L.slice(0, 400).map((s, i) => (ayr[i] || '') + (() => {
       const r = s[st.tf];
       const c = r.degisim;
       return `<a class="row" href="#/${encodeURIComponent(s.t)}">
@@ -329,11 +349,11 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Kotu bilanco surprizi') ? '<span class="warnb" title="Son bilanço kötü sürpriz">⚠ Bilanço</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Hizli yukseldi') ? '<span class="warnb" title="Son 5 günde %15+ ya da 20 günde endeksten %30+ yükseldi">⚡ Hızlı</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Sert dusus') ? '<span class="warnb" title="Son 20 günde endeksten %25+ fazla düştü ya da taban serisi (piyasa geneli değil)">▼ Sert düşüş</span>' : ''}
-          ${tab === 'firsat' ? fazBadge(s) : ''}
-          <span class="badge b-${esc(r.sinyal)}">${esc(trLbl(r.sinyal))}</span>
+          ${tab === 'firsat' && !st.q ? fazBadge(s) : kutuChip(s)}
+          ${tab === 'firsat' && !st.q ? `<small style="color:var(--mute)" title="IKARUS günlük sinyali (tek başına karar vermiyor)">günlük: ${esc(trLbl(r.sinyal))}</small>` : `<span class="badge b-${esc(r.sinyal)}">${esc(trLbl(r.sinyal))}</span>`}
           <small class="mono">${esc(rightText(r, tab, s))}</small>
         </span></a>`;
-    }).join('');
+    })()).join('');
   }
 
   // Bulut listesi (Telegram: "ekle KCHOL 250") her cihazda gorunur; tarayici listesi yalniz bu cihazda.
@@ -402,6 +422,68 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     }));
   }
 
+  // Karar kutusu (16 Kas 2026). Kurallar Firsatlar/Eldekiler ile ayni; durumlar karar_bt testinde olculdu
+  // (2020-09..2026-11, sonraki 63 islem gunu BIST100'e gore fazla getiri, medyan).
+  const KTEST = {'AL ✓✓': '+3,3 puan (kazanan %59)', 'AL ✓': '+0,2 puan (kazanan %51)', 'teknik': '−1,3 puan', 'ucuz': '−3,2 puan', 'kacti': '−3,6 puan',
+                 'pahali': '−2,4 puan (6 ayda −5,8)', 'orta': '−3,6 puan (ucuz + faz alımda −1,4)', 'zayif': '−5,9 puan', 'sert': '−7,5 puan', 'yok': '−7,6 puan'};
+  function kutu(s) {
+    const r = s.D || {}, v = (s.temel && s.temel.v3) || null, f = s.faz || {}, fi = s.fiyat_ivme || {};
+    const fn = f.normal || {}, fh = f.ha || {};
+    const et = (v && v.etiketler) || [];
+    const P = r.percentile, o20 = fi.o20_x, o5 = fi.o5;
+    const bil = !!v && v.sira >= 0.8 && !et.includes('Kotu bilanco surprizi');
+    const ucuz = P != null && P <= 20;
+    const kacmadi = !(o20 > 10 || o5 > 15);
+    const tik = (fn.alim ? 1 : 0) + (fh.alim ? 1 : 0);
+    const adim = [
+      [bil, 'Bilanço', v ? `sıra %${nf(100 * v.sira, 0)}${et.includes('Kotu bilanco surprizi') ? ', kötü sürpriz' : ''} (en üst %20 gerekir)` : 'puan yok'],
+      [ucuz, 'Ucuz bölge', `Percentile ${nf(P, 0)} (≤ 20 gerekir)`],
+      [kacmadi, 'Fiyat kaçmadı', `ayda endekse göre ${o20 >= 0 ? '+' : ''}${nf(o20, 1)}% (≤ +10), 5 günde ${o5 >= 0 ? '+' : ''}${nf(o5, 1)}%`],
+      [tik > 0, 'Faz motoru', `normal ${trLbl(fn.sinyal)} ${fn.gun || ''}g · HA ${trLbl(fh.sinyal)} ${fh.gun || ''}g`]];
+    let k, cls, neden, test;
+    if (!v) { k = 'BİLANÇO PUANI YOK'; cls = 'yok'; test = 'yok';
+      neden = 'Bu hisse için bilanço puanı hesaplanmıyor (banka, sigorta ya da eksik veri). Sistem bilançosuz alım demiyor: testte yalnız teknikle alım kazandırmadı.'; }
+    else if (v.sira < 0.6 || et.includes('Kotu bilanco surprizi')) { k = 'UZAK DUR'; cls = 'uzak'; test = 'zayif';
+      neden = et.includes('Kotu bilanco surprizi') ? 'Son bilanço kötü sürpriz.' : `Bilanço zayıf: temel sırası %${nf(100 * v.sira, 0)}.`;
+      neden += ucuz ? ' IKARUS ucuz bölgede dese de bilanço desteklemiyor; testte bu durum kaybettirdi.' : ''; }
+    else if (et.includes('Sert dusus')) { k = 'UZAK DUR'; cls = 'uzak'; test = 'sert';
+      neden = 'Hisseye özel sert düşüş: son 20 günde endeksten %25+ fazla düştü ya da taban serisi var. Önce sebebini (haber, KAP) öğren.'; }
+    else if (v.sira < 0.8) { k = 'ORTA'; cls = 'bekle'; test = 'orta';
+      neden = `Bilanço orta seviyede (sıra %${nf(100 * v.sira, 0)}). Sistem net değil: testte bu grup belirgin bir avantaj göstermedi.`; }
+    else if (P >= 80) { k = 'PAHALI'; cls = 'sat'; test = 'pahali';
+      neden = 'Bilanço iyi ama fiyat son 200 günün pahalı bölgesinde (Percentile ≥ 80). Elindeyse kâr al bölgesi; yeni alım için geri çekilme bekle.'; }
+    else if (!kacmadi) { k = 'BEKLE'; cls = 'bekle'; test = 'kacti';
+      neden = 'Bilanço iyi ama fiyat kaçtı: son bir ayda endeksten %10’dan fazla ya da 5 günde %15’ten fazla yükseldi. Bilançonun çoğu fiyatlanmış olabilir; sakinleşmesini bekle.'; }
+    else if (!ucuz) { k = 'BEKLE'; cls = 'bekle'; test = 'ucuz';
+      neden = 'Bilanço iyi ama fiyat ucuz bölgede değil (Percentile 20’nin üstünde). Ucuz bölgeye gelirse aday olur.'; }
+    else if (tik === 2) { k = 'AL ✓✓'; cls = 'al'; test = 'AL ✓✓';
+      neden = 'Bilanço güçlü, fiyat ucuz bölgede, kaçmamış; faz motoru hem normal hem Heikin Ashi mumda alım tarafında. Sistemin en güçlü durumu.'; }
+    else if (tik === 1) { k = 'AL ✓'; cls = 'al'; test = 'AL ✓';
+      neden = `Bilanço güçlü, fiyat ucuz bölgede, kaçmamış; faz motoru ${fn.alim ? 'normal mumda' : 'Heikin Ashi mumda'} alım tarafında, ${fn.alim ? 'Heikin Ashi' : 'normal'} henüz dönmedi.`; }
+    else { k = 'BEKLE'; cls = 'bekle'; test = 'teknik';
+      neden = 'Hisse iyi ve ucuz ama teknik henüz dönmedi: faz motoru alım tarafında değil. Faz dönünce AL olur; erken almak testte daha kötü sonuç verdi.'; }
+    const eh = elde().find(x => x.t === s.t);
+    const ek = eh ? eldeKarar(s) : null;
+    return {k, cls, neden, test, adim, ek, eh};
+  }
+  function kutuHtml(s) {
+    const b = kutu(s);
+    const el = b.ek ? `<small><b>Elinde:</b> ${b.ek.karar}${b.ek.sat.concat(b.ek.dikkat).length ? ' — ' + b.ek.sat.concat(b.ek.dikkat).map(esc).join(' · ') : ' — kâr al bölgesine (Percentile 80) kadar tut; bilanço bozulursa sat.'}</small>` : '';
+    return `<section class="kutu ${b.cls}" aria-label="Karar">
+      <div class="kb"><span class="kk">${esc(b.k)}</span><small>Bugünkü karar · günlük veri</small></div>
+      <small style="color:var(--ink)">${esc(b.neden)}</small>
+      <div class="adim">${b.adim.map(([ok, a, d]) => `<div class="${ok ? 'ok' : ''}">${ok ? '✓' : '✗'} <b>${a}</b>${esc(d)}</div>`).join('')}</div>
+      ${el}
+      <small>Testte bu durumdaki hisseler sonraki 3 ayda BIST100'e göre medyan ${KTEST[b.test]}. Garanti değil; birkaç hisseye dağıt.</small>
+    </section>`;
+  }
+  function kutuChip(s) {
+    if (!s.D) return '';
+    const b = kutu(s);
+    const c = b.ek && b.ek.karar === 'SAT' ? 'sat' : (b.cls === 'al' ? 'al' : (b.cls === 'sat' ? 'sat' : ''));
+    return `<span class="kchip ${c}">${esc(b.ek ? 'Elde: ' + b.ek.karar : b.k)}</span>`;
+  }
+
   function fazBadge(s) {
     const f = s.faz || {}; const n = f.normal || {}, h = f.ha || {};
     const k = (n.alim ? 1 : 0) + (h.alim ? 1 : 0);
@@ -436,7 +518,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <div class="spacer"></div>
         <span class="badge b-${esc(r.sinyal)}" style="font-size:12px;padding:5px 11px">${esc(trLbl(r.sinyal))}</span>
       </div>
-      <p class="hint desc" style="margin:0 0 12px">${esc(SIGDESC[r.sinyal] || '')}</p>
+      ${kutuHtml(s)}
+      <p class="hint desc" style="margin:0 0 12px"><b>IKARUS günlük sinyali: ${esc(trLbl(r.sinyal))}.</b> ${esc(SIGDESC[r.sinyal] || '')} Bu sinyal tek başına karar vermiyor (her gün değişebiliyor); kararı yukarıdaki kutu, IKARUS'un faz motoru ve değer bandıyla veriyor.</p>
       <div class="grid">
         <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
           <section class="card" aria-label="Fiyat ve değer bandı">
