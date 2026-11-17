@@ -470,13 +470,13 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const kacmadi = !(o20 > 10 || o5 > 15);
     const tik = (fn.alim ? 1 : 0) + (fh.alim ? 1 : 0);
     const adim = [
-      [bil, 'Bilanço', v ? `sıra %${nf(100 * v.sira, 0)}${et.includes('Kotu bilanco surprizi') ? ', kötü sürpriz' : ''} (en üst %20 gerekir)` : 'puan yok'],
+      [bil, 'Bilanço', v ? `${v.grup === 'finans' ? 'bankalar/sigorta içinde ' : ''}sıra %${nf(100 * v.sira, 0)}${et.includes('Kotu bilanco surprizi') ? ', kötü sürpriz' : ''} (en üst %20 gerekir)` : 'puan yok'],
       [ucuz, 'Ucuz bölge', `Percentile ${nf(P, 0)} (≤ 20 gerekir)`],
       [kacmadi, 'Fiyat kaçmadı', `ayda endekse göre ${o20 >= 0 ? '+' : ''}${nf(o20, 1)}% (≤ +10), 5 günde ${o5 >= 0 ? '+' : ''}${nf(o5, 1)}%`],
       [tik > 0, 'Faz motoru', `normal ${trLbl(fn.sinyal)} ${fn.gun || ''}g · HA ${trLbl(fh.sinyal)} ${fh.gun || ''}g`]];
     let k, cls, neden, test;
-    if (!v) { k = 'BİLANÇO PUANI YOK'; cls = 'yok'; test = 'yok';
-      neden = 'Bu hisse için bilanço puanı hesaplanmıyor (banka, sigorta ya da eksik veri). Sistem bilançosuz alım demiyor: testte yalnız teknikle alım kazandırmadı.'; }
+    if (!v || v.sira == null) { k = 'BİLANÇO PUANI YOK'; cls = 'yok'; test = 'yok';
+      neden = 'Bu hisse için bilanço puanı hesaplanamıyor (faktoring/leasing gibi farklı muhasebe yapısı ya da eksik veri). Sistem bilançosuz alım demiyor: testte yalnız teknikle alım kazandırmadı.'; }
     else if (v.sira < 0.6 || et.includes('Kotu bilanco surprizi')) { k = 'UZAK DUR'; cls = 'uzak'; test = 'zayif';
       neden = et.includes('Kotu bilanco surprizi') ? 'Son bilanço kötü sürpriz.' : `Bilanço zayıf: temel sırası %${nf(100 * v.sira, 0)}.`;
       neden += ucuz ? ' IKARUS ucuz bölgede dese de bilanço desteklemiyor; testte bu durum kaybettirdi.' : ''; }
