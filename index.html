@@ -221,10 +221,12 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   ];
   TABS.unshift(['elde', 'Eldekiler', 'Elinizdeki hisseleri ekleyin; her akşamki taramayla kontrol edilir (günlük veri). SAT: (1) Kâr al: fiyat son 200 günün pahalı bölgesine geldi (Percentile ≥ 80) — 2022–2026 testinde en iyi çıkış buydu (çıkışlar ortalama endeksi +23 puan geçmiş, işlem başına medyan +4,9); (2) Temel bozuldu: temel puan sırası %60’ın altına düştü ya da kötü bilanço sürprizi geldi. DİKKAT: stop kırıldı ya da faz motoru 10+ gündür DAĞITIM — testte bu durumlarda satmak ortalama kaybettirdi (sonra toparlandı), o yüzden yalnız uyarı. Kalıcı liste için Telegram botuna "ekle KCHOL 250" yazın: bulutta saklanır, her cihazda görünür, akşam özetinde de kararı gelir. Buradan eklenenler yalnız bu tarayıcıda kalır.']);
   TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20), fiyatı kaçmamış (20 günde endeksten en fazla +%10, 5 günde en fazla +%15) ve hisseye özel çöküş yok. ✓ işareti: faz motoru alım tarafında (normal ve/veya Heikin Ashi mum). Üstte AL (✓ ya da ✓✓, faz motoru alım tarafında), altta İZLE (iyi ve ucuz ama teknik dönmedi). Listeden çıkmak satış sinyali değil. Aldıktan sonra Eldekiler’e ekle: fiyat pahalı bölgeye gelince (Percentile ≥ 80) kâr al, bilanço bozulursa sat; DAĞITIM etiketine bakıp satma (testte kaybettirdi). 2022–2026 simülasyonunda iki ✓ ile alınanlar BIST100’ü işlem başına ortalama ~8 puan geçti (medyan +2, %54’ü geçti); kriz dönemlerinde alınanlar daha da iyi. Garanti değil; tek hisseye değil birkaçına dağıtın.']);
+  TABS.push(['defter', 'Kayıt defteri', 'Sistemin canlı sınavı. 16 Kasım 2026’dan beri karar kutusunun AL (✓ ya da ✓✓) dediği her hisse, ertesi günün kapanış fiyatından otomatik olarak deftere yazılır; fiyat pahalı bölgeye gelince (Percentile ≥ 80) ya da bilanço bozulunca ertesi gün kapanıştan “satılır”. Geriye dönük düzeltilemez; getiriler temettü/bölünme düzeltmeli fiyatla, %0,2 alış + %0,2 satış maliyeti düşülerek hesaplanır. Her kayıt eşit tutarda sayılır. Gerçek alım değildir, sistemin sanal takibidir.']);
   const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
                   ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
                   ['elde', 'Eldekiler', ['elde']],
-                  ['temel', 'Temel sıra', ['temel']]];
+                  ['temel', 'Temel sıra', ['temel']],
+                  ['defter', 'Kayıt defteri', ['defter']]];
   const grpOf = (tab) => (GROUPS.find(g => g[2].includes(tab)) || GROUPS[0])[0];
   const SIGDESC = Object.fromEntries(TABS.filter(t => ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM'].includes(t[0])).map(t => [t[0], t[2]]));
   SIGDESC.BEKLE = 'Ya ucuz değil ya da 3+ şart eksik; ya da fiyat önceki Stop’un %3,5’ten fazla altında (stop kırıldı). Bekle.';
@@ -280,6 +282,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     if (tab === 'tum') ts = stocks().map(s => s.t).sort();
     else if (SIGDESC[tab]) ts = (LL.sinyal || []).filter(t => sig(t) === tab);
     else if (tab === 'elde') ts = elde().map(x => x.t);
+    else if (tab === 'defter') ts = (((st.data.defter || {}).liste_acik) || []).map(x => x.t);
     else if (tab === 'yeni') ts = (LL.yeni || []).filter(t => ALIM.includes(sig(t)));
     else if (tab === 'ucuz') ts = (LL.ucuz || []).filter(t => M[t] && M[t][st.tf]).sort((a, b) => (M[b][st.tf].toplam || 0) - (M[a][st.tf].toplam || 0));
     else ts = LL[tab] || [];
@@ -329,6 +332,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     $('#genel').innerHTML = `<b>Piyasanın %${oran}'i son 200 ${st.tf === 'W' ? 'haftanın' : 'günün'} dibinde.</b> Bütün borsa birlikte düştüğü için “ucuz” etiketi bugün hisseleri ayırmıyor.`;
     const L = listFor(tab);
     if (tab === 'elde' && !st.q) { renderElde(); return; }
+    if (tab === 'defter' && !st.q) { renderDefter(); return; }
     if (!L.length) { $('#list').innerHTML = `<div class="empty">Bu listede bugün hisse yok.</div>`; return; }
     const ayr = (tab === 'firsat' && !st.q) ? (() => {
       const nAl = L.filter(s => (s.faz && ((s.faz.normal || {}).alim || (s.faz.ha || {}).alim))).length;
@@ -377,6 +381,36 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     if (fh.sinyal === 'DAGITIM' && fh.gun >= 10) dikkat.push(`Heikin Ashi faz ${fh.gun} gündür DAĞITIM`);
     return {sat, dikkat, karar: sat.length ? 'SAT' : (dikkat.length ? 'DİKKAT' : 'TUT')};
   }
+  function renderDefter() {
+    const K = st.data.defter || {}, M = byT();
+    const sg = (x) => x == null ? '–' : (x >= 0 ? '+' : '−') + nf(Math.abs(x), 1) + '%';
+    const NED = {'bilanco bozuldu': 'bilanço bozuldu', 'pahali (kar al)': 'pahalı, kâr al'};
+    const ned = (n) => NED[n] || n || '';
+    const gunFark = (a, b) => Math.max(0, Math.round((new Date(b) - new Date(a)) / 864e5));
+    const acik = K.liste_acik || [], kap = K.liste_kapali || [], bek = K.bekleyen_al || [];
+    // Mevduat karsilastirmasi: politika faizi %36 (Kasim 2026), basit faiz, yaklasik
+    const mev = (a, b) => 36 * gunFark(a, b) / 365;
+    const hepsi = acik.concat(kap).filter(x => x.getiri != null);
+    const ortMev = hepsi.length ? hepsi.reduce((t, x) => t + mev(x.giris, x.cikis || K.son_gun), 0) / hepsi.length : null;
+    const ozet = `<div class="row" style="grid-template-columns:1fr;display:block">
+      <b>Başlangıç ${esc(K.baslangic || '–')} · son güncelleme ${esc(K.son_gun || '–')}</b><br>
+      <small>Açık ${K.acik || 0} · kapanmış ${K.kapali || 0} kayıt${hepsi.length ? ` · kayıt başına ortalama <b>${sg(K.ort_getiri)}</b>, BIST100’e göre <b>${sg(K.ort_fazla)}</b>, endeksi geçen %${K.kazanan} · aynı sürede mevduat yaklaşık ${sg(ortMev)}` : ' · henüz sonuç yok'}</small></div>`;
+    const satir = (x, kapali) => {
+      const s = M[x.t];
+      const kb = !kapali && s && s.D ? kutuChip(s) : '';
+      return `<a class="row" href="#/${encodeURIComponent(x.t)}"><span class="l"><b>${esc(x.t)}</b>
+        <small>${esc(x.karar || '')} · giriş ${esc(x.giris)}${kapali ? ` → çıkış ${esc(x.cikis)} (${esc(ned(x.neden))})` : ` · ${gunFark(x.giris, K.son_gun)} gün`}</small></span>
+        <span class="r">${kb}<small class="mono">${sg(x.getiri)} · endekse göre ${sg(x.fazla)}</small></span></a>`;
+    };
+    const bekS = bek.length ? `<div class="ayrac">Bir sonraki kapanışta deftere girecek (${bek.length})</div>
+      <div class="row" style="display:block"><small class="mono">${bek.map(b => esc(b[0]) + ' ' + esc(b[1].replace('AL ', ''))).join(' · ')}</small></div>` : '';
+    const satB = Object.keys(K.bekleyen_sat || {}).length ? `<div class="ayrac">Bir sonraki kapanışta çıkacak</div>
+      <div class="row" style="display:block"><small class="mono">${Object.entries(K.bekleyen_sat).map(([t, n]) => esc(t) + ' (' + esc(ned(n)) + ')').join(' · ')}</small></div>` : '';
+    $('#list').innerHTML = ozet + bekS + satB +
+      `<div class="ayrac">Açık kayıtlar (${acik.length})</div>` + (acik.length ? acik.map(x => satir(x, false)).join('') : `<div class="empty">Henüz açık kayıt yok.</div>`) +
+      `<div class="ayrac">Kapanmış kayıtlar (${kap.length})</div>` + (kap.length ? kap.slice().reverse().map(x => satir(x, true)).join('') : `<div class="empty">Henüz kapanmış kayıt yok.</div>`);
+  }
+
   function renderElde() {
     const M = byT(), L = elde();
     const form = `<form id="eldeForm" class="eldef" style="grid-column:1/-1">
