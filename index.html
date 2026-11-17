@@ -498,7 +498,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
       neden = 'Hisse iyi ve ucuz ama teknik henüz dönmedi: faz motoru alım tarafında değil. Faz dönünce AL olur; erken almak testte daha kötü sonuç verdi.'; }
     const eh = elde().find(x => x.t === s.t);
     const ek = eh ? eldeKarar(s) : null;
-    return {k, cls, neden, test, adim, ek, eh};
+    const not_ = et.includes('Faaliyet iyi, net kar dustu') ? 'Not: Faaliyet iyi (satış, FAVÖK ve esas faaliyet kârı geçen yılın aynı çeyreğine göre güçlü) ama net kâr düştü; genelde finansman gideri, kur farkı ya da parasal kayıp gibi faaliyet dışı kalemlerden. Geçmişte bu tip hisseler (değer ve kalite de iyiyse) sonraki 2–3 ayda endeksi ortalama 3,4 puan geçti, ama 6 ayda geride kaldı (medyan −5,7). Kısa vadeli düşün, uzun tutma.' : '';
+    return {k, cls, neden, test, adim, ek, eh, not_};
   }
   function kutuHtml(s) {
     const b = kutu(s);
@@ -508,6 +509,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
       <small style="color:var(--ink)">${esc(b.neden)}</small>
       <div class="adim">${b.adim.map(([ok, a, d]) => `<div class="${ok ? 'ok' : ''}">${ok ? '✓' : '✗'} <b>${a}</b>${esc(d)}</div>`).join('')}</div>
       ${el}
+      ${b.not_ ? `<small style="color:var(--ink)">${esc(b.not_)}</small>` : ''}
       <small>Testte bu durumdaki hisseler sonraki 3 ayda BIST100'e göre medyan ${KTEST[b.test]}. Garanti değil; birkaç hisseye dağıt.</small>
     </section>`;
   }
