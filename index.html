@@ -222,7 +222,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   TABS.unshift(['elde', 'Eldekiler', 'Elinizdeki hisseleri ekleyin; her akşamki taramayla kontrol edilir (günlük veri). SAT: (1) Kâr al: fiyat son 200 günün en pahalı bölgesine geldi (Percentile ≥ 90; 80–90 arası DİKKAT); (2) Takip eden stop: alıştan %20 yükseldikten sonra zirveden %15 geri gelirse — kazancı korur (alış tarihi gerekir). 2023–2026 portföy testinde bu ikili eski kuraldan (Percentile 80) daha çok kazandırdı ve en kötü düşüşü azalttı; (3) Temel bozuldu: temel puan sırası %60’ın altına düştü ya da kötü bilanço sürprizi geldi. DİKKAT: IKARUS stop çizgisi kırıldı ya da faz motoru 10+ gündür DAĞITIM — testte bu durumlarda satmak ortalama kaybettirdi (sonra toparlandı), o yüzden yalnız uyarı. Kalıcı liste için Telegram botuna "ekle KCHOL 250 17.11.2026" yazın: bulutta saklanır, her cihazda görünür, akşam özetinde de kararı gelir. Buradan eklenenler yalnız bu tarayıcıda kalır.']);
   TABS.unshift(['firsat', 'Fırsatlar', 'Bilançosu güçlü (temel puanı en üst %20), son bilançosu kötü sürpriz değil, IKARUS’ta ucuz bölgede (Percentile ≤ 20), fiyatı kaçmamış (20 günde endeksten en fazla +%10, 5 günde en fazla +%15) ve hisseye özel çöküş yok. ✓ işareti: faz motoru alım tarafında (normal ve/veya Heikin Ashi mum). Üstte AL (✓ ya da ✓✓, faz motoru alım tarafında), altta İZLE (iyi ve ucuz ama teknik dönmedi). Listeden çıkmak satış sinyali değil. Aldıktan sonra Eldekiler’e ekle: fiyat çok pahalı bölgeye gelince (Percentile ≥ 90) kâr al, alıştan %20 yükseldikten sonra zirveden %15 düşerse sat (takip eden stop), bilanço bozulursa sat; DAĞITIM etiketine bakıp satma (testte kaybettirdi). 2022–2026 simülasyonunda iki ✓ ile alınanlar BIST100’ü işlem başına ortalama ~8 puan geçti (medyan +2, %54’ü geçti); kriz dönemlerinde alınanlar daha da iyi. Garanti değil; tek hisseye değil birkaçına dağıtın.']);
   TABS.push(['defter', 'Kayıt defteri', 'Sistemin canlı sınavı. 16 Kasım 2026’dan beri karar kutusunun AL (✓ ya da ✓✓) dediği her hisse, ertesi günün kapanış fiyatından otomatik olarak deftere yazılır; ertesi gün kapanıştan “satılır”. Çıkış için iki kural yan yana izlenir: YENİ (Percentile ≥ 90’da kâr al + takip eden stop: alıştan +%20 sonra zirveden %15) ve ESKİ (Percentile ≥ 80’de kâr al); ikisinde de bilanço bozulursa satılır. Hangisinin daha iyi olduğunu canlı sonuç gösterecek. Geriye dönük düzeltilemez; getiriler temettü/bölünme düzeltmeli fiyatla, %0,2 alış + %0,2 satış maliyeti düşülerek hesaplanır. Her kayıt eşit tutarda sayılır. Gerçek alım değildir, sistemin sanal takibidir.']);
-  const GROUPS = [['firsat', 'Fırsatlar', ['firsat']],
+  TABS.push(['geri_alim', 'Geri alım yapanlar', 'Son 30 günde KAP’a “Payların Geri Alınmasına İlişkin Bildirim” yapan şirketler (şirket kendi hissesini borsadan alıyor). Üstte yeni başlayan geri alım dalgaları (son 60 gün). 2021–2026 testinde: yeni geri alım dalgası başlayan şirketler sonraki 6 ayda piyasayı ortalama %12 (ortanca %5,6) geçti, her yıl artıda kaldı; 2023 deprem dönemindeki toplu alımlar daha zayıftı. Fırsatlar’ın AL bölümünde geri alım yapanlar öne alınır (2025–26 testinde 5 hisseyle x1,33 → x1,61). Tek başına al sinyali değil: bilanço ve ucuzluk için karar kutusuna bakın.']);
+  const GROUPS = [['firsat', 'Fırsatlar', ['firsat', 'geri_alim']],
                   ['teknik', 'Teknik', ['ALINABILIR', 'TOPLANIYOR', 'YAKIN', 'DAGITIM', 'yeni', 'ucuz', 'pahali', 'stop', 'tum']],
                   ['elde', 'Eldekiler', ['elde']],
                   ['temel', 'Temel sıra', ['temel']],
@@ -297,6 +298,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
 
   function rightText(r, tab, s) {
     const v = s && s.temel && s.temel.v3;
+    if (tab === 'geri_alim' && s && s.geri_alim) return `${s.geri_alim.n30} bildirim/30g · başlangıç ${s.geri_alim.dalga_bas.slice(8, 10)}.${s.geri_alim.dalga_bas.slice(5, 7)}`;
     if ((tab === 'temel' || tab === 'firsat') && v) return 'Temel ' + nf(100 * v.toplam, 0) + (v.etiketler && v.etiketler.includes('Kotu bilanco surprizi') ? ' · ⚠' : '');
     if (tab === 'ucuz') return 'Pct ' + nf(r.percentile, 1) + ' · Toplam ' + nf(r.toplam, 1);
     if (tab === 'pahali') return 'Pct ' + nf(r.percentile, 1);
@@ -350,6 +352,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         </span>
         <span class="r">
           ${r.yeni_sinyal ? '<span class="new">YENİ</span>' : ''}
+          ${s.geri_alim && s.geri_alim.aktif ? `<span class="new" style="background:var(--up,#1a7f4b)" title="Son 30 günde ${s.geri_alim.n30} pay geri alım bildirimi (son: ${esc(s.geri_alim.son)})">🔁 Geri alım</span>` : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Kotu bilanco surprizi') ? '<span class="warnb" title="Son bilanço kötü sürpriz">⚠ Bilanço</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Hizli yukseldi') ? '<span class="warnb" title="Son 5 günde %15+ ya da 20 günde endeksten %30+ yükseldi">⚡ Hızlı</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Sert dusus') ? '<span class="warnb" title="Son 20 günde endeksten %25+ fazla düştü ya da taban serisi (piyasa geneli değil)">▼ Sert düşüş</span>' : ''}
@@ -564,6 +567,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <span class="badge b-${esc(r.sinyal)}" style="font-size:12px;padding:5px 11px">${esc(trLbl(r.sinyal))}</span>
       </div>
       ${kutuHtml(s)}
+      ${s.geri_alim && s.geri_alim.aktif ? `<div class="card"><b>🔁 Şirket kendi hissesini geri alıyor</b><br><small>Son 30 günde ${s.geri_alim.n30} geri alım bildirimi; bu dalga ${esc(s.geri_alim.dalga_bas)} tarihinde başladı, son bildirim ${esc(s.geri_alim.son)}. 2021–2026 testinde yeni geri alım dalgası sonrası 6 ayda piyasa ortalama %12 (ortanca %5,6) geçildi. Tek başına al sinyali değildir.</small></div>` : ''}
       <p class="hint desc" style="margin:0 0 12px"><b>IKARUS günlük sinyali: ${esc(trLbl(r.sinyal))}.</b> ${esc(SIGDESC[r.sinyal] || '')} Bu sinyal tek başına karar vermiyor (her gün değişebiliyor); kararı yukarıdaki kutu, IKARUS'un faz motoru ve değer bandıyla veriyor.</p>
       <div class="grid">
         <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
