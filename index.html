@@ -657,7 +657,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
          ['PD/DD', kat(k.pddd)], ['ROE', yz(o.roe)], nbf];
     const rows = k.maddeler.map(m => `<div class="fs">${m.gecti === true ? okSvg() : m.gecti === false ? noSvg() : naSvg()}<span>${esc(m.ad)}</span><em class="mono">${esc(fsVal(m))}</em><p>${esc(m.aciklama)}</p></div>`).join('');
     const [y, a] = String(k.donem).split('/');
-    return v3Card(k) + nadCard(k) + `<section class="card" aria-label="Temel analiz">
+    return v3Card(k) + istirakCard(k) + nadCard(k) + `<section class="card" aria-label="Temel analiz">
       <h2>Temel analiz · ${k.puan}/${k.en_fazla}${k.olculen < k.en_fazla ? ` <span style="font-weight:400;color:var(--mute);font-size:12px">(${k.olculen} ölçülebildi)</span>` : ''}</h2>
       <div class="quad"${q.length > 4 ? ' style="grid-template-columns:repeat(3,minmax(0,1fr));row-gap:10px"' : ''}>${q.map(([l, v]) => `<div><small>${l}</small><strong class="mono">${v}</strong></div>`).join('')}</div>
       ${rows}
@@ -683,6 +683,14 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
       ${bar('Değerleme', v.deger, '1/3')}
       <p class="note">Her sayı, bu şirketin bankalar dışındaki BIST şirketleri arasındaki sırası (100 = en iyi). İvme: net kâr sürprizi ${yuz(R.sue_nk)}, esas faaliyet kârı sürprizi ${yuz(R.sue_faal)}, satışların M3’e göre büyümesi ${yuz(R.satis_reel)}, kârlılık (ROE) artışı ${yuz(R.roe_ivme)}. Kalite: F-skoru ${yuz(R.F)}, ROE ${yuz(R.roe)}. Değerleme: kâr/piyasa değeri ${yuz(R.kaz_get)}, PD/DD ucuzluğu ${yuz(R.pddd)}. Sürpriz = bu çeyreğin kârı, geçen yılın aynı çeyreğinin M3 kadar büyütülmüş halinden ne kadar iyi (şirketin kendi oynaklığına göre). 2020–2026 testinde en güçlü işaretler kâr sürprizi ve satış büyümesiydi; iki sürprizin de en kötü %20’de olması ise ucuz ve kaliteli şirketlerde bile kaybettirdi.</p>
     </section>`;
+  }
+  // 24 Kas (temel/icinden_sonuc.txt): gercek holdinglerde istiraklerin bilanco puani (bilgi; karara girmez)
+  function istirakCard(k) {
+    const p = k.istirak_puani;
+    if (!p) return '';
+    const sat = p.istirakler.map(x => `<div class="fs"><span>${esc(x.t)}</span><em class="mono">pay %${nf(100 * x.pay, 0)} · sıra %${nf(100 * x.sira, 0)}</em><p>Holdingin borsadaki iştirak değerinde ağırlığı %${nf(100 * x.agirlik, 0)}.</p></div>`).join('');
+    return `<section class="card" aria-label="İştirak puanı"><h2>İştiraklerin bilanço puanı · %${nf(100 * p.puan, 0)}</h2>${sat}
+      <p class="note">Holdingin borsadaki iştiraklerinin (bankalar hariç) temel puan sıralarının, holdingin payı × piyasa değeriyle ağırlıklı ortalaması. Kapsam: borsadaki iştirak değerinin %${nf(100 * p.kapsam, 0)}'i. 2014–2026 testinde (12 holding) iştirak puanı yüksek (≥ %70) holdingler 6 ayda piyasayı ortanca +%4,8 geçti, düşükler (≤ %40) −%4,9 geride kaldı. Ama holdingin kendi bilanço puanı daha güçlü çıktı (kendi sırası ≥ %80: 6 ayda ortanca +%8,6, kazanma %62) ve iştirak puanını eklemek bunu iyileştirmedi; bu yüzden karar kutusu holdingin kendi puanına bakar, bu kart bilgi içindir.</p></section>`;
   }
   function nadCard(k) {
     const n = k.nad;
