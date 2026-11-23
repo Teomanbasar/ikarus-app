@@ -482,7 +482,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const kacmadi = !(o20 > 10 || o5 > 15);
     const tik = (fn.alim ? 1 : 0) + (fh.alim ? 1 : 0);
     const adim = [
-      [bil, 'Bilanço', v ? `${v.grup === 'finans' ? 'bankalar/sigorta içinde ' : ''}sıra %${nf(100 * v.sira, 0)}${et.includes('Kotu bilanco surprizi') ? ', kötü sürpriz' : ''} (en üst %20 gerekir)` : 'puan yok'],
+      v && v.nad_karar ? [bil, 'NAD iskontosu', `holding: iskonto ${s.temel.nad ? '%' + nf(-100 * s.temel.nad.iskonto, 0) : '?'}, 3 yıllık geçmişinde yeri %${nf(v.nad_yuzdelik, 0)} (en derin %20 gerekir; konsolide bilanço puanı holdingde çalışmadı)`]
+        : [bil, 'Bilanço', v ? `${v.grup === 'finans' ? 'bankalar/sigorta içinde ' : ''}sıra %${nf(100 * v.sira, 0)}${et.includes('Kotu bilanco surprizi') ? ', kötü sürpriz' : ''} (en üst %20 gerekir)` : 'puan yok'],
       [ucuz, 'Ucuz bölge', `Percentile ${nf(P, 0)} (≤ 20 gerekir)`],
       [kacmadi, 'Fiyat kaçmadı', `ayda endekse göre ${o20 >= 0 ? '+' : ''}${nf(o20, 1)}% (≤ +10), 5 günde ${o5 >= 0 ? '+' : ''}${nf(o5, 1)}%`],
       [tik > 0, 'Faz motoru', `normal ${trLbl(fn.sinyal)} ${fn.gun || ''}g · HA ${trLbl(fh.sinyal)} ${fh.gun || ''}g`]];
@@ -495,7 +496,8 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     else if (et.includes('Sert dusus')) { k = 'UZAK DUR'; cls = 'uzak'; test = 'sert';
       neden = 'Hisseye özel sert düşüş: son 20 günde endeksten %25+ fazla düştü ya da taban serisi var. Önce sebebini (haber, KAP) öğren.'; }
     else if (v.sira < 0.8) { k = 'ORTA'; cls = 'bekle'; test = 'orta';
-      neden = `Bilanço orta seviyede (sıra %${nf(100 * v.sira, 0)}). Sistem net değil: testte bu grup belirgin bir avantaj göstermedi.`; }
+      neden = v.nad_karar ? `Holding: NAD iskontosu kendi 3 yıllık geçmişine göre derin değil (yeri %${nf(v.nad_yuzdelik, 0)}). Testte yalnız en derin %20 iskontoda belirgin avantaj vardı (6 ayda endekse göre ortalama +20 puan, az gözlem).`
+        : `Bilanço orta seviyede (sıra %${nf(100 * v.sira, 0)}). Sistem net değil: testte bu grup belirgin bir avantaj göstermedi.`; }
     else if (P >= 80) { k = 'PAHALI'; cls = 'sat'; test = 'pahali';
       neden = 'Bilanço iyi ama fiyat son 200 günün pahalı bölgesinde (Percentile ≥ 80). Elindeyse Percentile 90’da kâr al; yeni alım için geri çekilme bekle.'; }
     else if (!kacmadi) { k = 'BEKLE'; cls = 'bekle'; test = 'kacti';
