@@ -374,9 +374,13 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   }
   function eldeKaydet(L) { try { localStorage.setItem('ik_elde', JSON.stringify(L.filter(x => !x.bulut).map(({t, fiyat, tarih}) => ({t, fiyat, tarih})))); } catch (e) {} }
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
-  function eldeKarar(s) {
+  const sg2 = (x) => (x >= 0 ? '+' : '−') + nf(Math.abs(x), 0) + '%';
+  function eldeKarar(s, alis) {
     const r = s.D || {}, v = (s.temel && s.temel.v3) || {}, f = s.faz || {};
     const sat = [], dikkat = [];
+    // 24 Kas (temel/stop2_sonuc.txt): zarar stopu %20 + yeri 120 gun nakitte tut + satis fiyatinin %10 ustunde geri gir
+    if (alis && r.fiyat && r.fiyat <= alis * 0.8) sat.push(`Zarar stopu: alıştan ${sg2(100 * (r.fiyat / alis - 1))} (sınır −%20). Sat; yerini 120 güne kadar nakitte tut, başka hisse alma. Fiyat ${nf(r.fiyat * 1.1)} ₺ üstüne çıkarsa geri al. Telegram: "stop ${s.t} ${nf(r.fiyat)}"`);
+    else if (alis && r.fiyat && r.fiyat <= alis * 0.85) dikkat.push(`Zarar stopuna yakın: alıştan ${sg2(100 * (r.fiyat / alis - 1))}; stop ${nf(alis * 0.8)} ₺`);
     const iz = ((st.data && st.data.elde_iz) || {})[s.t];
     if (r.percentile >= 90) sat.push(`Kâr al: fiyat pahalı bölgede (Percentile ${nf(r.percentile, 0)} ≥ 90)`);
     else if (r.percentile >= 80) dikkat.push(`Pahalı bölgeye girdi (Percentile ${nf(r.percentile, 0)}); kâr al 90’da`);
@@ -394,7 +398,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
   function renderDefter() {
     const K = st.data.defter || {}, M = byT();
     const sg = (x) => x == null ? '–' : (x >= 0 ? '+' : '−') + nf(Math.abs(x), 1) + '%';
-    const NED = {'bilanco bozuldu': 'bilanço bozuldu', 'pahali (kar al)': 'pahalı, kâr al', 'takip eden stop': 'takip eden stop'};
+    const NED = {'bilanco bozuldu': 'bilanço bozuldu', 'pahali (kar al)': 'pahalı, kâr al', 'takip eden stop': 'takip eden stop', 'zarar stopu': 'zarar stopu (−%20)'};
     const ned = (n) => NED[n] || n || '';
     const gunFark = (a, b) => Math.max(0, Math.round((new Date(b) - new Date(a)) / 864e5));
     const acik = K.liste_acik || [], kap = K.liste_kapali || [], bek = K.bekleyen_al || [];
@@ -404,12 +408,12 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     const ortMev = hepsi.length ? hepsi.reduce((t, x) => t + mev(x.giris, x.cikis || K.son_gun), 0) / hepsi.length : null;
     const ozet = `<div class="row" style="grid-template-columns:1fr;display:block">
       <b>Başlangıç ${esc(K.baslangic || '–')} · son güncelleme ${esc(K.son_gun || '–')}</b><br>
-      <small>Aşağıdaki liste YENİ kurala göre. Açık ${K.acik || 0} · kapanmış ${K.kapali || 0} kayıt${hepsi.length ? ` · aynı sürede mevduat yaklaşık ${sg(ortMev)}` : ' · henüz sonuç yok'}</small></div>`;
+      <small>Aşağıdaki liste GEÇERLİ (stoplu) kurala göre. Açık ${K.acik || 0} · kapanmış ${K.kapali || 0} kayıt${hepsi.length ? ` · aynı sürede mevduat yaklaşık ${sg(ortMev)}` : ' · henüz sonuç yok'}</small></div>`;
     const KR = K.kurallar || {};
     const krS = (ad, ac) => { const k = KR[ad]; if (!k) return '';
-      return `<div class="row"><span class="l"><b>${ad === 'yeni' ? 'YENİ kural' : 'ESKİ kural'}</b><small>${esc(ac)}</small></span>
+      return `<div class="row"><span class="l"><b>${ad === 'stoplu' ? 'STOPLU kural' : (ad === 'yeni' ? 'YENİ kural' : 'ESKİ kural')}</b><small>${esc(ac)}</small></span>
         <span class="r"><small class="mono">açık ${k.acik} · kapanan ${k.kapali}</small><small class="mono">${k.ort_getiri != null ? `ort. ${sg(k.ort_getiri)} · endekse göre ${sg(k.ort_fazla)} · geçen %${k.kazanan}` : 'henüz sonuç yok'}</small></span></div>`; };
-    const krB = KR.yeni ? `<div class="ayrac">Çıkış kuralları yan yana</div>` + krS('yeni', 'Percentile ≥ 90’da kâr al + takip eden stop (alıştan +%20 sonra zirveden %15) + bilanço bozulursa sat') + krS('eski', 'Percentile ≥ 80’de kâr al + bilanço bozulursa sat') : '';
+    const krB = KR.yeni ? `<div class="ayrac">Çıkış kuralları yan yana</div>` + krS('stoplu', 'GEÇERLİ: yeni kural + zarar stopu (alıştan −%20) + satıştan sonra fiyat %10 yükselirse 120 gün içinde geri gir') + krS('yeni', 'Percentile ≥ 90’da kâr al + takip eden stop (alıştan +%20 sonra zirveden %15) + bilanço bozulursa sat') + krS('eski', 'Percentile ≥ 80’de kâr al + bilanço bozulursa sat') : '';
     const satir = (x, kapali) => {
       const s = M[x.t];
       const kb = !kapali && s && s.D ? kutuChip(s) : '';
@@ -433,13 +437,13 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <input id="eF" placeholder="Alış fiyatı (isteğe bağlı)" inputmode="decimal">
         <input id="eD" type="date" title="Alış tarihi (isteğe bağlı)">
         <button type="submit">Ekle</button>
-        <small style="grid-column:1/-1;color:var(--ink2)">Buradan eklenenler yalnız bu cihazda kalır ve tarayıcı silebilir. Kalıcı ve her cihazda görünmesi için Telegram botuna yazın: <b class="mono">ekle KCHOL 250 17.11.2026</b> (tarih takip eden stop için gerekli) · <b class="mono">cikar KCHOL</b> · <b class="mono">eldekiler</b> (☁ işaretliler buluttan gelir).</small></form>`;
+        <small style="grid-column:1/-1;color:var(--ink2)">Buradan eklenenler yalnız bu cihazda kalır ve tarayıcı silebilir. Kalıcı ve her cihazda görünmesi için Telegram botuna yazın: <b class="mono">ekle KCHOL 250 17.11.2026</b> (tarih takip eden stop için gerekli) · <b class="mono">cikar KCHOL</b> · zarar stopuyla sattıysanız <b class="mono">stop KCHOL 170</b> (geri giriş takibi) · <b class="mono">eldekiler</b> (☁ işaretliler buluttan gelir).</small></form>`;
     const sg = (x) => (x >= 0 ? '+' : '−') + nf(Math.abs(x)) + '%';
     const kart = (h, i) => {
       const s = M[h.t];
       const silB = h.bulut ? `<small title="Telegram'a 'cikar ${esc(h.t)}' yazın">☁ bulut</small>` : `<button class="sil" data-sil="${i}" title="Listeden çıkar">Çıkar</button>`;
       if (!s || !s.D) return `<div class="row"><span class="l"><b>${esc(h.t)}</b><small>Taramada bulunamadı</small></span><span class="r">${silB}</span></div>`;
-      const r = s.D, k = eldeKarar(s), v = (s.temel && s.temel.v3) || {};
+      const r = s.D, k = eldeKarar(s, h.fiyat), v = (s.temel && s.temel.v3) || {};
       const get = h.fiyat ? 100 * (r.fiyat / h.fiyat - 1) : null;
       const cls = k.karar === 'SAT' ? 'warnb' : (k.karar === 'DİKKAT' ? 'fazb bir' : 'fazb iki');
       const neden = k.sat.concat(k.dikkat.map(x => 'Uyarı: ' + x));
@@ -456,7 +460,9 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
           ${silB}
         </span></div>`;
     };
-    $('#list').innerHTML = form + (L.length ? L.map(kart).join('') : `<div class="empty" style="grid-column:1/-1">Henüz hisse eklemediniz. Elinizdeki hisseleri yukarıdan ekleyin.</div>`);
+    const SB = (st.data && st.data.elde_stop) || [];
+    const stopB = SB.length ? `<div class="ayrac" style="grid-column:1/-1">Stop sonrası bekleyenler (yer nakitte)</div>` + SB.map(x => `<a class="row" href="#/${encodeURIComponent(x.t)}"><span class="l"><b>${esc(x.t)}</b><small>satış ${nf(x.cikis)} ₺ · ${esc(x.tarih.split('-').reverse().join('.'))} · ${x.kalan} gün kaldı · ${esc(x.neden)}</small></span><span class="r"><span class="${x.durum === 'GERI AL' ? 'fazb iki' : (x.durum === 'VAZGEC' ? 'fazb bir' : 'fazb bir')}">${x.durum === 'GERI AL' ? 'GERİ AL' : (x.durum === 'VAZGEC' ? 'VAZGEÇ' : 'BEKLE')}</span><small class="mono">geri al ≥ ${nf(x.seviye)} ₺</small></span></a>`).join('') : '';
+    $('#list').innerHTML = form + (L.length ? L.map(kart).join('') : `<div class="empty" style="grid-column:1/-1">Henüz hisse eklemediniz. Elinizdeki hisseleri yukarıdan ekleyin.</div>`) + stopB;
     $('#eldeForm').addEventListener('submit', (e) => {
       e.preventDefault();
       const t = $('#eT').value.trim().toLocaleUpperCase('tr-TR').replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, '');
@@ -514,7 +520,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     else { k = 'BEKLE'; cls = 'bekle'; test = 'teknik';
       neden = 'Hisse iyi ve ucuz ama teknik henüz dönmedi: faz motoru alım tarafında değil. Faz dönünce AL olur; erken almak testte daha kötü sonuç verdi.'; }
     const eh = elde().find(x => x.t === s.t);
-    const ek = eh ? eldeKarar(s) : null;
+    const ek = eh ? eldeKarar(s, eh.fiyat) : null;
     const not_ = et.includes('Faaliyet iyi, net kar dustu') ? 'Not: Faaliyet iyi (satış, FAVÖK ve esas faaliyet kârı geçen yılın aynı çeyreğine göre güçlü) ama net kâr düştü; genelde finansman gideri, kur farkı ya da parasal kayıp gibi faaliyet dışı kalemlerden. Geçmişte bu tip hisseler (değer ve kalite de iyiyse) sonraki 2–3 ayda endeksi ortalama 3,4 puan geçti, ama 6 ayda geride kaldı (medyan −5,7). Kısa vadeli düşün, uzun tutma.' : '';
     return {k, cls, neden, test, adim, ek, eh, not_};
   }
