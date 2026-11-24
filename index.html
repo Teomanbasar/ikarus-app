@@ -657,7 +657,7 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
          ['PD/DD', kat(k.pddd)], ['ROE', yz(o.roe)], nbf];
     const rows = k.maddeler.map(m => `<div class="fs">${m.gecti === true ? okSvg() : m.gecti === false ? noSvg() : naSvg()}<span>${esc(m.ad)}</span><em class="mono">${esc(fsVal(m))}</em><p>${esc(m.aciklama)}</p></div>`).join('');
     const [y, a] = String(k.donem).split('/');
-    return v3Card(k) + istirakCard(k) + nadCard(k) + `<section class="card" aria-label="Temel analiz">
+    return v3Card(k) + bankaCard(k) + istirakCard(k) + nadCard(k) + `<section class="card" aria-label="Temel analiz">
       <h2>Temel analiz · ${k.puan}/${k.en_fazla}${k.olculen < k.en_fazla ? ` <span style="font-weight:400;color:var(--mute);font-size:12px">(${k.olculen} ölçülebildi)</span>` : ''}</h2>
       <div class="quad"${q.length > 4 ? ' style="grid-template-columns:repeat(3,minmax(0,1fr));row-gap:10px"' : ''}>${q.map(([l, v]) => `<div><small>${l}</small><strong class="mono">${v}</strong></div>`).join('')}</div>
       ${rows}
@@ -683,6 +683,22 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
       ${bar('Değerleme', v.deger, '1/3')}
       <p class="note">Her sayı, bu şirketin bankalar dışındaki BIST şirketleri arasındaki sırası (100 = en iyi). İvme: net kâr sürprizi ${yuz(R.sue_nk)}, esas faaliyet kârı sürprizi ${yuz(R.sue_faal)}, satışların M3’e göre büyümesi ${yuz(R.satis_reel)}, kârlılık (ROE) artışı ${yuz(R.roe_ivme)}. Kalite: F-skoru ${yuz(R.F)}, ROE ${yuz(R.roe)}. Değerleme: kâr/piyasa değeri ${yuz(R.kaz_get)}, PD/DD ucuzluğu ${yuz(R.pddd)}. Sürpriz = bu çeyreğin kârı, geçen yılın aynı çeyreğinin M3 kadar büyütülmüş halinden ne kadar iyi (şirketin kendi oynaklığına göre). 2020–2026 testinde en güçlü işaretler kâr sürprizi ve satış büyümesiydi; iki sürprizin de en kötü %20’de olması ise ucuz ve kaliteli şirketlerde bile kaybettirdi.</p>
     </section>`;
+  }
+  // 24 Kas (temel/bankalar_sonuc.txt): bankaya ozgu olculer; nim_deg, maliyet/gelir, risk maliyeti, komisyon buyumesi banka puanina girer
+  function bankaCard(k) {
+    const b = k.banka;
+    if (!b || b.hata) return '';
+    const p = (v, d = 1) => v == null ? '—' : '%' + nf(100 * v, d);
+    const sat = [
+      ['Net faiz marjı (NIM)', p(b.nim), 'Net faiz geliri / ortalama aktif (son 4 çeyrek).'],
+      ['NIM değişimi (1 yıl)', b.nim_deg == null ? '—' : (b.nim_deg >= 0 ? '+' : '') + nf(100 * b.nim_deg, 1) + ' puan', 'Faiz döngüsünün bankaya etkisi. Puana girer (yüksek iyi).'],
+      ['Maliyet / gelir', p(b.maliyet_gelir, 0), 'Faaliyet giderleri / faaliyet gelirleri. Puana girer (düşük iyi).'],
+      ['Risk maliyeti', p(b.risk_maliyeti, 1), 'Kredi karşılık gideri / krediler. Puana girer (düşük iyi).'],
+      ['Komisyon geliri reel büyüme', p(b.komisyon_reel, 0), 'Net ücret-komisyon gelirinin enflasyondan arındırılmış yıllık büyümesi. Puana girer.'],
+      ['Kredi / mevduat', p(b.kredi_mevduat, 0), 'Bilgi.'],
+      ['Özkaynak / aktif', p(b.ozk_aktif, 1), 'Sermaye tamponu. Bilgi (testte 2025 öncesi güçlüydü, 2025+ ters).']
+    ].map(([a, v, d]) => `<div class="fs"><span>${a}</span><em class="mono">${v}</em><p>${d}</p></div>`).join('');
+    return `<section class="card" aria-label="Banka ölçüleri"><h2>Banka ölçüleri</h2>${sat}<p class="note">Banka puanı (24 Kas): eski ölçülere (kâr/PD, PD/DD, ROE, F, bilanço sürprizi, net faiz geliri büyümesi, ROE ivmesi) bu dört bankacılık ölçüsü eklendi. 2014–2026 testinde (12 banka) iyi ve kötü üçte bir arasındaki 6 aylık ortanca farkı 2014–17 −1, 2018–20 +7, 2021–24 +15, 2025+ +10 puan; eski puanda 2025+ −2 idi. 12 bankayla kanıt orta düzeyde. Katılım bankalarında (ALBRK) bu kalemler gelmiyor.</p></section>`;
   }
   // 24 Kas (temel/icinden_sonuc.txt): gercek holdinglerde istiraklerin bilanco puani (bilgi; karara girmez)
   function istirakCard(k) {
