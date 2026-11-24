@@ -353,8 +353,6 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <span class="r">
           ${r.yeni_sinyal ? '<span class="new">YENİ</span>' : ''}
           ${s.geri_alim && s.geri_alim.aktif ? `<span class="new" style="background:var(--up,#1a7f4b)" title="Son 30 günde ${s.geri_alim.n30} pay geri alım bildirimi (son: ${esc(s.geri_alim.son)})">🔁 Geri alım</span>` : ''}
-          ${s.icerden && s.icerden.yon_alim ? `<span class="new" style="background:var(--up,#1a7f4b)" title="Son 60 günde yönetici pay alımı (son: ${esc(s.icerden.yon_alim.son)})">👤 Yönetici aldı</span>` : ''}
-          ${s.icerden && s.icerden.yon_satim ? `<span class="new" style="background:var(--down,#b3261e)" title="Son 63 günde yönetici pay satımı (son: ${esc(s.icerden.yon_satim.son)})">👤 Yönetici sattı</span>` : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Kotu bilanco surprizi') ? '<span class="warnb" title="Son bilanço kötü sürpriz">⚠ Bilanço</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Hizli yukseldi') ? '<span class="warnb" title="Son 5 günde %15+ ya da 20 günde endeksten %30+ yükseldi">⚡ Hızlı</span>' : ''}
           ${s.temel && s.temel.v3 && (s.temel.v3.etiketler || []).includes('Sert dusus') ? '<span class="warnb" title="Son 20 günde endeksten %25+ fazla düştü ya da taban serisi (piyasa geneli değil)">▼ Sert düşüş</span>' : ''}
@@ -388,7 +386,6 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
     if (v.sira != null && v.sira < 0.6) sat.push(`Temel bozuldu: temel puan sırası %${nf(100 * v.sira, 0)} (< %60)`);
     if ((v.etiketler || []).includes('Kotu bilanco surprizi')) sat.push('Temel bozuldu: kötü bilanço sürprizi');
     if (r.kirdi) dikkat.push('IKARUS stop çizgisi kırıldı');
-    if (s.icerden && s.icerden.yon_satim) dikkat.push(`Yönetici sattı (${s.icerden.yon_satim.son}; testte sonraki 3 ayda ortanca −%7)`);
     const fn = f.normal || {}, fh = f.ha || {};
     if (fn.sinyal === 'DAGITIM' && fn.gun >= 10) dikkat.push(`Faz motoru ${fn.gun} gündür DAĞITIM`);
     if (fh.sinyal === 'DAGITIM' && fh.gun >= 10) dikkat.push(`Heikin Ashi faz ${fh.gun} gündür DAĞITIM`);
@@ -578,11 +575,6 @@ footer{font-size:11px;color:var(--mute);padding:8px 0 calc(24px + env(safe-area-
         <span class="badge b-${esc(r.sinyal)}" style="font-size:12px;padding:5px 11px">${esc(trLbl(r.sinyal))}</span>
       </div>
       ${kutuHtml(s)}
-      ${s.icerden ? `<div class="card"><b>👤 İçeriden alım-satım (KAP)</b><br><small>${[
-        s.icerden.yon_alim ? `Son 60 günde yönetici alımı: ${s.icerden.yon_alim.n} bildirim, ${s.icerden.yon_alim.kisi_sayisi} kişi (${esc((s.icerden.yon_alim.gorev || []).join(', '))}), son ${esc(s.icerden.yon_alim.son)}. 2021–2026 testinde yönetici alımı sonrası 6 ayda piyasa ortancasına göre ortanca +%5,7 (kazanma %55, 278 olay).` : '',
-        s.icerden.coklu_alici ? `Son 30 günde ${s.icerden.coklu_alici.kisi_sayisi} farklı kişi/kurum net alım yaptı; testte bu durum 6 ayda ortanca +%27 (yalnız 31 olay, az).` : '',
-        s.icerden.yon_satim ? `Son 63 günde yönetici satımı: ${s.icerden.yon_satim.n} bildirim, ${s.icerden.yon_satim.kisi_sayisi} kişi (${esc((s.icerden.yon_satim.gorev || []).join(', '))}), son ${esc(s.icerden.yon_satim.son)}. Testte yönetici satımı sonrası 3 ayda ortanca −%7,1 (kazanma %36, 318 olay).` : ''
-      ].filter(Boolean).join(' ')} Bilgi içindir; karara ve sıralamaya girmez, Eldekiler'de satım DİKKAT olarak görünür.</small></div>` : ''}
       ${s.geri_alim && s.geri_alim.aktif ? `<div class="card"><b>🔁 Şirket kendi hissesini geri alıyor</b><br><small>Son 30 günde ${s.geri_alim.n30} geri alım bildirimi; bu dalga ${esc(s.geri_alim.dalga_bas)} tarihinde başladı, son bildirim ${esc(s.geri_alim.son)}. 2021–2026 testinde yeni geri alım dalgası sonrası 6 ayda piyasa ortalama %12 (ortanca %5,6) geçildi. Tek başına al sinyali değildir.</small></div>` : ''}
       <p class="hint desc" style="margin:0 0 12px"><b>IKARUS günlük sinyali: ${esc(trLbl(r.sinyal))}.</b> ${esc(SIGDESC[r.sinyal] || '')} Bu sinyal tek başına karar vermiyor (her gün değişebiliyor); kararı yukarıdaki kutu, IKARUS'un faz motoru ve değer bandıyla veriyor.</p>
       <div class="grid">
